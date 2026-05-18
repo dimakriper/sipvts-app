@@ -129,19 +129,17 @@
                 <tr v-for="(criterion, i) in criteria" :key="`row-${i}`" class="border-b border-gray-300 dark:border-gray-700">
                   <td class="p-2 font-medium">{{ criterion }}</td>
                   <td v-for="(criterion2, j) in criteria" :key="`cell-${i}-${j}`" class="text-center p-2">
-                    <input
+                    <select
                       v-if="i < j"
                       v-model.number="criteriaMatrix[`${i}-${j}`]"
-                      @input="ensureInteger(criteriaMatrix, `${i}-${j}`)"
-                      type="number"
-                      min="1"
-                      max="9"
-                      step="1"
-                      inputmode="numeric"
-                      class="w-12 px-1 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-xs"
-                    />
+                      class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-xs"
+                    >
+                      <option v-for="opt in scaleOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
                     <span v-else-if="i === j" class="text-gray-500">1</span>
-                    <span v-else class="text-gray-500">{{ (1 / (criteriaMatrix[`${j}-${i}`] || 1)).toFixed(2) }}</span>
+                    <span v-else class="text-gray-500">{{ formatReciprocal(criteriaMatrix[`${j}-${i}`] || 1) }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -168,19 +166,17 @@
                 <tr v-for="(alternative, i) in alternatives" :key="`alt-row-${i}`" class="border-b border-gray-300 dark:border-gray-700">
                   <td class="p-2 font-medium">{{ alternative }}</td>
                   <td v-for="(alternative2, j) in alternatives" :key="`alt-cell-${i}-${j}`" class="text-center p-2">
-                    <input
+                    <select
                       v-if="i < j"
                       v-model.number="altMatrices[cIdx][`${i}-${j}`]"
-                      @input="ensureInteger(altMatrices[cIdx], `${i}-${j}`)"
-                      type="number"
-                      min="1"
-                      max="9"
-                      step="1"
-                      inputmode="numeric"
-                      class="w-12 px-1 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-xs"
-                    />
+                      class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-xs"
+                    >
+                      <option v-for="opt in scaleOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
                     <span v-else-if="i === j" class="text-gray-500">1</span>
-                    <span v-else class="text-gray-500">{{ (1 / (altMatrices[cIdx][`${j}-${i}`] || 1)).toFixed(2) }}</span>
+                    <span v-else class="text-gray-500">{{ formatReciprocal(altMatrices[cIdx][`${j}-${i}`] || 1) }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -292,11 +288,47 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const ensureInteger = (matrix: Record<string, number>, key: string) => {
-  const value = matrix[key]
-  if (value !== undefined && !Number.isInteger(value)) {
-    matrix[key] = Math.round(value)
+const scaleOptions = [
+  { label: '1/9', value: 1/9 },
+  { label: '1/8', value: 1/8 },
+  { label: '1/7', value: 1/7 },
+  { label: '1/6', value: 1/6 },
+  { label: '1/5', value: 1/5 },
+  { label: '1/4', value: 1/4 },
+  { label: '1/3', value: 1/3 },
+  { label: '1/2', value: 1/2 },
+  { label: '1', value: 1 },
+  { label: '2', value: 2 },
+  { label: '3', value: 3 },
+  { label: '4', value: 4 },
+  { label: '5', value: 5 },
+  { label: '6', value: 6 },
+  { label: '7', value: 7 },
+  { label: '8', value: 8 },
+  { label: '9', value: 9 }
+]
+
+const formatReciprocal = (value: number): string => {
+  if (!value) return '0'
+  const reciprocal = 1 / value
+  
+  const commonFractions: Record<number, string> = {
+    0.125: '1/8',
+    0.14285714: '1/7',
+    0.16666667: '1/6',
+    0.2: '1/5',
+    0.25: '1/4',
+    0.33333333: '1/3',
+    0.5: '1/2'
   }
+  
+  for (const [num, frac] of Object.entries(commonFractions)) {
+    if (Math.abs(parseFloat(num) - reciprocal) < 0.0001) {
+      return frac
+    }
+  }
+  
+  return reciprocal.toFixed(2)
 }
 
 const criteria = ref(['Quality', 'Cost', 'Speed'])

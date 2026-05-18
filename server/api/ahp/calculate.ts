@@ -4,7 +4,8 @@ import {
   buildMatrix,
   calculateLambdaMax,
   calculateCI,
-  calculateCR
+  calculateCR,
+  calculateGlobalPrioritiesWeightedGeometricMean
 } from '../../utils/ahp'
 
 interface AHPRequest {
@@ -55,23 +56,23 @@ export default defineEventHandler(async (event): Promise<AHPResponse> => {
       }
     }
 
-    // Validate criteria matrix contains only integers 1-9
+    // Validate criteria matrix values are in valid AHP range (1/9 to 9)
     for (const [key, value] of Object.entries(body.criteriaMatrix)) {
-      if (!Number.isInteger(value) || value < 1 || value > 9) {
+      if (typeof value !== 'number' || value < 1/9 || value > 9) {
         return {
           success: false,
-          error: `Все значения в матрице критериев должны быть целыми числами от 1 до 9. Получено: ${value}`
+          error: `Все значения в матрице критериев должны быть в диапазоне от 1/9 до 9. Получено: ${value}`
         }
       }
     }
 
-    // Validate alternative matrices contain only integers 1-9
+    // Validate alternative matrices values are in valid AHP range (1/9 to 9)
     for (const [cIdx, matrix] of Object.entries(body.altMatrices)) {
       for (const [key, value] of Object.entries(matrix)) {
-        if (!Number.isInteger(value) || value < 1 || value > 9) {
+        if (typeof value !== 'number' || value < 1/9 || value > 9) {
           return {
             success: false,
-            error: `Все значения в матрице альтернатив должны быть целыми числами от 1 до 9. Получено: ${value}`
+            error: `Все значения в матрице альтернатив должны быть в диапазоне от 1/9 до 9. Получено: ${value}`
           }
         }
       }
@@ -109,27 +110,13 @@ export default defineEventHandler(async (event): Promise<AHPResponse> => {
       localPriorities.push(altWeights)
     }
 
-    // Step 6: Calculate global priorities
-    const globalScores = validAlternatives.map((alt, altIdx) => {
-      let globalScore = 0
-      for (let c = 0; c < n; c++) {
-        const altPriorities = localPriorities[c]
-        const critWeight = critWeights[c]
-        if (altPriorities && critWeight !== undefined) {
-          const altPriority = altPriorities[altIdx]
-          if (altPriority !== undefined) {
-            globalScore += altPriority * critWeight
-          }
-        }
-      }
-      return {
-        name: alt,
-        globalScore: globalScore
-      }
-    })
-
-    // Step 7: Sort by score
-    globalScores.sort((a, b) => b.globalScore - a.globalScore)
+    // Step 6: Calculate global priorities using weighted geometric mean aggregation
+    // Formula: globalScore = ∏(localPriority_i ^ critWeight_i)
+    const globalScores = calculateGlobalPrioritiesWeightedGeometricMean(
+      localPriorities,
+      critWeights,
+      validAlternatives
+    )
 
     return {
       success: true,

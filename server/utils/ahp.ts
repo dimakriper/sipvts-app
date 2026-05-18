@@ -117,3 +117,66 @@ export function calculateCR(ci: number, n: number): number {
   if (riValue === undefined) return 0
   return ci / riValue
 }
+
+/**
+ * Calculate global priorities using weighted geometric mean aggregation
+ * Formula: globalScore = ∏(localPriority_i ^ critWeight_i)
+ * Each local priority is raised to the power of its criterion weight
+ * More suitable for multiplicative preference models
+ */
+export function calculateGlobalPrioritiesWeightedGeometricMean(
+  localPriorities: number[][],
+  critWeights: number[],
+  alternatives: string[]
+): Array<{ name: string; globalScore: number }> {
+  const globalScores = alternatives.map((alt, altIdx) => {
+    let globalScore = 1
+
+    for (let c = 0; c < localPriorities.length; c++) {
+      const altPriority = localPriorities[c][altIdx]
+      const critWeight = critWeights[c]
+
+      if (altPriority !== undefined && critWeight !== undefined && altPriority > 0) {
+        // Weighted geometric mean: multiply altPriority^critWeight
+        globalScore *= Math.pow(altPriority, critWeight)
+      }
+    }
+
+    return {
+      name: alt,
+      globalScore
+    }
+  })
+
+  // Sort by score descending
+  return globalScores.sort((a, b) => b.globalScore - a.globalScore)
+}
+
+/**
+ * Calculate global priorities using simple multiplicative aggregation
+ * Formula: globalScore = ∏(localPriority_i)
+ * Note: Doesn't account for criterion weights explicitly (treats all as equal)
+ * Less suitable for weighted AHP but useful for comparison
+ */
+export function calculateGlobalPrioritiesMultiplicative(
+  localPriorities: number[][],
+  alternatives: string[]
+): Array<{ name: string; globalScore: number }> {
+  const globalScores = alternatives.map((alt, altIdx) => {
+    let globalScore = 1
+
+    for (let c = 0; c < localPriorities.length; c++) {
+      const altPriority = localPriorities[c][altIdx]
+      if (altPriority !== undefined && altPriority > 0) {
+        globalScore *= altPriority
+      }
+    }
+
+    return {
+      name: alt,
+      globalScore
+    }
+  })
+
+  return globalScores.sort((a, b) => b.globalScore - a.globalScore)
+}

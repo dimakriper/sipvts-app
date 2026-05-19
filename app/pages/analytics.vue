@@ -17,7 +17,7 @@
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Analyze Repository
           </h2>
-          
+
           <div class="flex gap-2 mb-4">
             <input
               v-model="newRepoUrl"
@@ -25,10 +25,10 @@
               placeholder="Enter GitHub repository URL (e.g., https://github.com/owner/repo)"
               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               @keyup.enter="addRepository"
-            />
+            >
             <button
-              @click="addRepository"
               class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+              @click="addRepository"
             >
               Add Repository
             </button>
@@ -44,8 +44,11 @@
         </div>
 
         <!-- Repositories Grid -->
-        <div v-if="store.repositories.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <RepositoryCard
+        <div
+          v-if="store.repositories.length > 0"
+          class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+        >
+          <AnalyticsRepositoryCard
             v-for="repo in store.repositories"
             :key="repo.id"
             :repository="repo"
@@ -54,31 +57,34 @@
         </div>
 
         <!-- Comparison Section -->
-        <div v-if="store.repositories.length > 1" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div
+          v-if="store.repositories.length > 1"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+        >
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Repository Comparison
           </h2>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <MetricsChart
+            <AnalyticsMetricsChart
               title="Stars Growth"
               :repositories="store.repositories"
               metric-key="starsHistory"
               type="line"
             />
-            <MetricsChart
+            <AnalyticsMetricsChart
               title="Commits by Month"
               :repositories="store.repositories"
               metric-key="commitsHistory"
               type="bar"
             />
-            <MetricsChart
+            <AnalyticsMetricsChart
               title="Issues Growth"
               :repositories="store.repositories"
               metric-key="issuesHistory"
               type="line"
             />
-            <MetricsChart
+            <AnalyticsMetricsChart
               title="Pull Requests by Month"
               :repositories="store.repositories"
               metric-key="prHistory"
@@ -89,10 +95,12 @@
 
         <!-- Empty State -->
         <div
-          v-else
+          v-if="store.repositories.length === 0"
           class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center"
         >
-          <div class="text-6xl mb-4">📊</div>
+          <div class="text-6xl mb-4">
+            📊
+          </div>
           <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             No repositories added yet
           </h3>
@@ -107,13 +115,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useAnalyticsStore, generateMockRepo } from '../stores/analytics'
+import { $fetch } from 'ofetch'
+import { useAnalyticsStore } from '../stores/analytics'
+import type { Repository } from '../stores/analytics'
 
 const store = useAnalyticsStore()
 const newRepoUrl = ref('')
 
-onMounted(() => {
-  store.initializeStore()
+onMounted(async () => {
+  try {
+    const defaults = await $fetch<Repository[]>('/api/analytics/repositories')
+    for (const repo of defaults) {
+      if (!store.repositories.some(r => r.id === repo.id)) {
+        store.addRepository(repo)
+      }
+    }
+  } catch {
+    // API unavailable
+  }
 })
 
 function validateUrl(url: string): boolean {
@@ -121,7 +140,7 @@ function validateUrl(url: string): boolean {
   return githubUrlPattern.test(url.trim())
 }
 
-function extractRepoInfo(url: string): { owner: string; repo: string } | null {
+function extractRepoInfo(url: string): { owner: string, repo: string } | null {
   const match = url.trim().match(/github\.com\/([\w-]+)\/([\w-]+)/)
   const owner = match?.[1]
   const repo = match?.[2]
@@ -133,7 +152,7 @@ function extractRepoInfo(url: string): { owner: string; repo: string } | null {
   return null
 }
 
-function addRepository() {
+async function addRepository() {
   store.setError(null)
 
   if (!newRepoUrl.value.trim()) {
@@ -152,16 +171,32 @@ function addRepository() {
     return
   }
 
-  // Add mock repository
-  const newRepo = generateMockRepo(repoInfo.owner, repoInfo.repo)
-  const success = store.addRepository(newRepo)
-
-  if (success) {
-    newRepoUrl.value = ''
+  try {
+    store.isLoading = true
+    const newRepo = await $fetch('/api/analytics/repository', {
+      method: 'POST',
+      body: { owner: repoInfo.owner, repo: repoInfo.repo }
+    })
+    const success = store.addRepository(newRepo)
+    if (success) {
+      newRepoUrl.value = ''
+    }
+  } catch {
+    store.setError('Failed to fetch repository data')
+  } finally {
+    store.isLoading = false
   }
 }
 
-function removeRepository(repoId: string) {
+async function removeRepository(repoId: string) {
+  try {
+    await $fetch('/api/analytics/repository', {
+      method: 'DELETE',
+      query: { id: repoId }
+    })
+  } catch {
+    // Ignore delete errors — remove from local store regardless
+  }
   store.removeRepository(repoId)
 }
 </script>

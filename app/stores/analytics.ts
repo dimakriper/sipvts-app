@@ -65,7 +65,7 @@ export const useAnalyticsStore = defineStore(
     const updateRepository = (repoId: string, updates: Partial<Repository>) => {
       const index = repositories.value.findIndex((r) => r.id === repoId)
       if (index !== -1) {
-        repositories.value[index] = { ...repositories.value[index], ...updates }
+        repositories.value[index] = Object.assign({}, repositories.value[index], updates) as Repository
       }
     }
 
@@ -104,16 +104,13 @@ export const useAnalyticsStore = defineStore(
     }
   },
   {
-    persist: {
-      enabled: true,
-      strategies: [
-        {
-          key: 'analytics-store',
-          storage: typeof window !== 'undefined' ? localStorage : undefined,
-          paths: ['repositories'],
-        },
-      ],
-    },
+    persist: [
+      {
+        key: 'analytics-store',
+        storage: typeof window !== 'undefined' ? localStorage : undefined,
+        pick: ['repositories']
+      }
+    ]
   }
 )
 
@@ -153,7 +150,7 @@ export function generateMockRepo(owner: string, name: string): Repository {
     pullRequests: Math.floor(Math.random() * 50) + 5,
     language: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust', 'Vue', 'Java'][
       Math.floor(Math.random() * 7)
-    ],
+    ]!,
     lastUpdated: `${Math.floor(Math.random() * 30)} days ago`,
     starsHistory: generateRandomHistory(stars, 12),
     commitsHistory: generateRandomHistory(commits, 12, 0.3),

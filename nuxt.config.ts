@@ -16,6 +16,11 @@ export default defineNuxtConfig({
     '/': { prerender: true }
   },
 
+  runtimeConfig: {
+    mongodbUri: '',
+    mongodbDb: 'sipvts'
+  },
+
   compatibilityDate: '2025-01-15',
 
   eslint: {

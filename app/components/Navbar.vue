@@ -42,6 +42,13 @@
             >
               AHP
             </NuxtLink>
+            <NuxtLink
+              to="/analytics"
+              class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white px-1 pt-1 border-b-2 text-sm font-medium"
+              active-class="border-indigo-500 text-gray-900 dark:text-gray-100"
+            >
+              Analytics
+            </NuxtLink>
           </div>
         </div>
         <div class="hidden sm:ml-6 sm:flex sm:items-center">

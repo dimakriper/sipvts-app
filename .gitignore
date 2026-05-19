@@ -27,3 +27,8 @@ eslint.config.mjs
 pnpm-lock.yaml
 pnpm-workspace.yaml
 .github/workflows/ci.yml
+package-lock.json
+package-lock.json
+package-lock.json
+.vscode/settings.json
+package-lock.json

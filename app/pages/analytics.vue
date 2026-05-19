@@ -4,25 +4,38 @@
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Repository Analytics
+          Аналитика репозиториев
         </h1>
         <p class="text-gray-600 dark:text-gray-400">
-          Analyze GitHub repositories and compare their metrics
+          Анализируйте GitHub-репозитории и сравнивайте их метрики
         </p>
+      </div>
+
+      <!-- Инструкция по использованию -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
+        <h2 class="text-base font-semibold text-blue-800 dark:text-blue-300 mb-2">
+          Как пользоваться
+        </h2>
+        <ol class="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
+          <li>Введите URL GitHub-репозитория в поле ввода (например, <span class="font-mono">https://github.com/vuejs/core</span>).</li>
+          <li>Нажмите кнопку «Добавить» — система загрузит и отобразит метрики репозитория.</li>
+          <li>Добавьте несколько репозиториев для сравнения графиков активности.</li>
+          <li>Нажмите × на карточке, чтобы удалить репозиторий из списка.</li>
+        </ol>
       </div>
 
       <ClientOnly>
         <!-- Repository Input Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Analyze Repository
+            Добавить репозиторий
           </h2>
 
           <div class="flex gap-2 mb-4">
             <input
               v-model="newRepoUrl"
               type="text"
-              placeholder="Enter GitHub repository URL (e.g., https://github.com/owner/repo)"
+              placeholder="Введите URL репозитория GitHub (например, https://github.com/owner/repo)"
               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               @keyup.enter="addRepository"
             >
@@ -30,7 +43,7 @@
               class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
               @click="addRepository"
             >
-              Add Repository
+              Добавить
             </button>
           </div>
 
@@ -62,30 +75,30 @@
           class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
         >
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            Repository Comparison
+            Сравнение репозиториев
           </h2>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <AnalyticsMetricsChart
-              title="Stars Growth"
+              title="Рост звёзд"
               :repositories="store.repositories"
               metric-key="starsHistory"
               type="line"
             />
             <AnalyticsMetricsChart
-              title="Commits by Month"
+              title="Коммиты по месяцам"
               :repositories="store.repositories"
               metric-key="commitsHistory"
               type="bar"
             />
             <AnalyticsMetricsChart
-              title="Issues Growth"
+              title="Рост задач"
               :repositories="store.repositories"
               metric-key="issuesHistory"
               type="line"
             />
             <AnalyticsMetricsChart
-              title="Pull Requests by Month"
+              title="Pull Requestы по месяцам"
               :repositories="store.repositories"
               metric-key="prHistory"
               type="bar"
@@ -102,10 +115,10 @@
             📊
           </div>
           <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No repositories added yet
+            Репозитории ещё не добавлены
           </h3>
           <p class="text-gray-600 dark:text-gray-400">
-            Add a GitHub repository to see analytics and metrics
+            Добавьте GitHub-репозиторий для просмотра аналитики и метрик
           </p>
         </div>
       </ClientOnly>

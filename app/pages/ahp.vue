@@ -1,7 +1,19 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-2">Analytic Hierarchy Process (AHP+)</h1>
-    <p class="text-gray-600 dark:text-gray-300 mb-8">Advanced multi-criteria decision-making analysis with consistency checking</p>
+    <h1 class="text-3xl font-bold mb-2">Метод Аналитической Иерархии (Analytic Hierarchy Process)</h1>
+    <p class="text-gray-600 dark:text-gray-300 mb-6">Многокритериальный анализ принятия решений с проверкой согласованности</p>
+
+    <!-- Инструкция по использованию -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+      <h2 class="text-base font-semibold text-blue-800 dark:text-blue-300 mb-2">Как пользоваться</h2>
+      <ol class="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
+        <li>В панели «Настройка» введите <strong>критерии</strong> — факторы, по которым будут оцениваться альтернативы.</li>
+        <li>Добавьте <strong>альтернативы</strong> — варианты решений, которые нужно сравнить.</li>
+        <li>Заполните матрицы сравнения: оцените относительную важность пар критериев и альтернатив по шкале от 1/9 до 9.</li>
+        <li>Нажмите «Рассчитать» — система вычислит веса критериев и итоговый рейтинг альтернатив.</li>
+        <li>Проверьте <strong>Отношение согласованности (ОС)</strong>: значение ≤ 10 % считается допустимым. Если ОС > 10 %, пересмотрите оценки.</li>
+      </ol>
+    </div>
 
     <ClientOnly>
       <!-- Alerts -->
@@ -31,17 +43,17 @@
       <!-- Setup Panel -->
       <div class="lg:col-span-1">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold mb-6">Setup</h2>
+          <h2 class="text-xl font-semibold mb-6">Настройка</h2>
 
           <!-- Criteria Section -->
           <div class="mb-6">
-            <h3 class="text-lg font-medium mb-3">Criteria</h3>
+            <h3 class="text-lg font-medium mb-3">Критерии</h3>
             <div class="space-y-2 mb-3">
               <div v-for="(criterion, index) in store.criteria" :key="`crit-${index}`" class="flex gap-2 items-center">
                 <input
                   v-model="store.criteria[index]"
                   type="text"
-                  placeholder="Criterion name"
+                  placeholder="Название критерия"
                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
@@ -57,19 +69,19 @@
               @click="addCriterion"
               class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition"
             >
-              + Add Criterion
+              + Добавить критерий
             </button>
           </div>
 
           <!-- Alternatives Section -->
           <div class="mb-6">
-            <h3 class="text-lg font-medium mb-3">Alternatives</h3>
+            <h3 class="text-lg font-medium mb-3">Альтернативы</h3>
             <div class="space-y-2 mb-3">
               <div v-for="(alternative, index) in store.alternatives" :key="`alt-${index}`" class="flex gap-2 items-center">
                 <input
                   v-model="store.alternatives[index]"
                   type="text"
-                  placeholder="Alternative name"
+                  placeholder="Название альтернативы"
                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
@@ -85,7 +97,7 @@
               @click="addAlternative"
               class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition"
             >
-              + Add Alternative
+              + Добавить альтернативу
             </button>
           </div>
 
@@ -96,14 +108,14 @@
               :disabled="isLoading"
               class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-md font-medium transition"
             >
-              {{ isLoading ? 'Calculating...' : 'Calculate' }}
+              {{ isLoading ? 'Вычисление...' : 'Рассчитать' }}
             </button>
             <button
               @click="resetForm"
               :disabled="isLoading"
               class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium transition"
             >
-              Reset All
+              Сбросить всё
             </button>
           </div>
         </div>
@@ -113,14 +125,14 @@
       <div class="lg:col-span-3">
         <!-- Criteria Comparison Matrix -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <h2 class="text-xl font-semibold mb-4">Criteria Comparison Matrix</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Rate importance of each criterion (1-9, where 1 = equal)</p>
+          <h2 class="text-xl font-semibold mb-4">Матрица сравнения критериев</h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Оцените важность каждого критерия (1–9, где 1 = равные)</p>
 
           <div v-if="store.criteria.length > 0" class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-300 dark:border-gray-700">
-                  <th class="text-left p-2 font-semibold">Criteria</th>
+                  <th class="text-left p-2 font-semibold">Критерии</th>
                   <th v-for="(criterion, idx) in store.criteria" :key="`header-${idx}`" class="text-center p-2 font-semibold">
                     {{ criterion.substring(0, 8) }}
                   </th>
@@ -151,14 +163,14 @@
 
         <!-- Alternative Comparison Matrices -->
         <div v-for="(criterion, cIdx) in store.criteria" :key="`alt-matrix-${cIdx}`" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <h3 class="text-lg font-semibold mb-4">{{ criterion }} - Alternatives Comparison</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Rate alternatives for this criterion (1-9)</p>
+          <h3 class="text-lg font-semibold mb-4">{{ criterion }} — Сравнение альтернатив</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Оцените альтернативы по данному критерию (1–9)</p>
 
           <div v-if="store.alternatives.length > 0" class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-300 dark:border-gray-700">
-                  <th class="text-left p-2 font-semibold">Alternatives</th>
+                  <th class="text-left p-2 font-semibold">Альтернативы</th>
                   <th v-for="(alt, idx) in store.alternatives" :key="`header-alt-${idx}`" class="text-center p-2 font-semibold">
                     {{ alt.substring(0, 8) }}
                   </th>
@@ -189,28 +201,28 @@
 
         <!-- Results Section -->
         <div v-if="results" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold mb-6">Analysis Results</h2>
+          <h2 class="text-xl font-semibold mb-6">Результаты анализа</h2>
 
           <!-- Consistency Metrics -->
           <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded">
-              <p class="text-sm text-gray-600 dark:text-gray-400">Consistency Index (CI)</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Индекс согласованности (ИС)</p>
               <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ results?.ci?.toFixed(4) ?? '0.0000' }}</p>
             </div>
             <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded">
-              <p class="text-sm text-gray-600 dark:text-gray-400">Consistency Ratio (CR)</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Отношение согласованности (ОС)</p>
               <p class="text-2xl font-bold" :class="(results?.cr ?? 0) <= 0.1 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                 {{ ((results?.cr ?? 0) * 100).toFixed(2) }}%
               </p>
               <p class="text-xs text-gray-500 mt-1" :class="(results?.cr ?? 0) <= 0.1 ? 'text-green-600' : 'text-red-600'">
-                {{ (results?.cr ?? 0) <= 0.1 ? '✓ Consistent' : '✗ Inconsistent' }}
+                {{ (results?.cr ?? 0) <= 0.1 ? '✓ Согласованно' : '✗ Несогласованно' }}
               </p>
             </div>
           </div>
 
           <!-- Criteria Weights -->
           <div class="mb-8">
-            <h3 class="text-lg font-semibold mb-4">Criteria Weights</h3>
+            <h3 class="text-lg font-semibold mb-4">Веса критериев</h3>
             <div class="space-y-3">
               <div
                 v-for="(criterion, idx) in store.criteria"
@@ -233,7 +245,7 @@
 
           <!-- Final Rankings -->
           <div class="mb-8">
-            <h3 class="text-lg font-semibold mb-4">Final Alternative Rankings</h3>
+            <h3 class="text-lg font-semibold mb-4">Итоговый рейтинг альтернатив</h3>
             <div class="space-y-2">
               <div
                 v-for="(alt, idx) in results?.rankedAlternatives ?? []"
@@ -263,22 +275,22 @@
 
           <!-- Detailed Report -->
           <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded">
-            <h3 class="text-lg font-semibold mb-4">Detailed Report</h3>
+            <h3 class="text-lg font-semibold mb-4">Подробный отчёт</h3>
             <div class="space-y-3 text-sm">
               <p>
-                <strong>Analysis Date:</strong> {{ new Date().toLocaleString() }}
+                <strong>Дата анализа:</strong> {{ new Date().toLocaleString() }}
               </p>
               <p>
-                <strong>Number of Criteria:</strong> {{ store.criteria.length }}
+                <strong>Количество критериев:</strong> {{ store.criteria.length }}
               </p>
               <p>
-                <strong>Number of Alternatives:</strong> {{ store.alternatives.length }}
+                <strong>Количество альтернатив:</strong> {{ store.alternatives.length }}
               </p>
               <p v-if="(results?.cr ?? 0) <= 0.1" class="text-green-700 dark:text-green-300">
-                ✓ <strong>The comparison matrices are sufficiently consistent (CR ≤ 0.1)</strong>
+                ✓ <strong>Матрицы сравнений достаточно согласованны (ОС ≤ 0.1)</strong>
               </p>
               <p v-else class="text-red-700 dark:text-red-300">
-                ✗ <strong>Warning: The comparison matrices show inconsistency (CR > 0.1). Review your comparisons.</strong>
+                ✗ <strong>Внимание: матрицы сравнений несогласованны (ОС > 0.1). Пересмотрите оценки.</strong>
               </p>
             </div>
           </div>

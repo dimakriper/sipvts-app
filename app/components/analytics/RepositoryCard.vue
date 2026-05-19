@@ -4,7 +4,7 @@
     <button
       @click="$emit('remove', repository.id)"
       class="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-      title="Remove repository"
+      title="Удалить репозиторий"
     >
       <svg
         class="w-5 h-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -42,39 +42,39 @@
         <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: getLanguageColor(repository.language) }"></span>
         {{ repository.language }}
       </span>
-      <span>Updated {{ repository.lastUpdated }}</span>
+      <span>Обновлено {{ repository.lastUpdated }}</span>
     </div>
 
     <!-- Metrics Grid -->
     <div class="grid grid-cols-2 gap-4 mb-6">
       <div class="text-center">
         <div class="text-2xl mb-1">⭐</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Stars</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Звёзды</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.stars) }}</p>
       </div>
       <div class="text-center">
         <div class="text-2xl mb-1">🔀</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Forks</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Форки</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.forks) }}</p>
       </div>
       <div class="text-center">
         <div class="text-2xl mb-1">📋</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Open Issues</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Открытые задачи</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.openIssues) }}</p>
       </div>
       <div class="text-center">
         <div class="text-2xl mb-1">🔄</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Pull Requests</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Pull Request'y</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.pullRequests) }}</p>
       </div>
       <div class="text-center">
         <div class="text-2xl mb-1">👥</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Contributors</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Контрибьюторы</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.contributorsCount) }}</p>
       </div>
       <div class="text-center">
         <div class="text-2xl mb-1">👁️</div>
-        <p class="text-gray-600 dark:text-gray-400 text-xs">Watchers</p>
+        <p class="text-gray-600 dark:text-gray-400 text-xs">Наблюдатели</p>
         <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatNumber(repository.watchers) }}</p>
       </div>
     </div>
@@ -82,12 +82,12 @@
     <!-- Code Quality Metrics -->
     <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-        Code Quality
+        Качество кода
       </h3>
       <div class="space-y-3">
         <div>
           <div class="flex justify-between text-xs mb-1">
-            <span class="text-gray-600 dark:text-gray-400">Maintainability Index</span>
+            <span class="text-gray-600 dark:text-gray-400">Индекс сопровождаемости</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ repository.maintainability_index }} / 100</span>
           </div>
           <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -96,7 +96,7 @@
         </div>
         <div>
           <div class="flex justify-between text-xs mb-1">
-            <span class="text-gray-600 dark:text-gray-400">Cyclomatic Complexity</span>
+            <span class="text-gray-600 dark:text-gray-400">Цикломатическая сложность</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ repository.cyclomatic_complexity }} / 50</span>
           </div>
           <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -105,7 +105,7 @@
         </div>
         <div>
           <div class="flex justify-between text-xs mb-1">
-            <span class="text-gray-600 dark:text-gray-400">Code Duplication</span>
+            <span class="text-gray-600 dark:text-gray-400">Дублирование кода</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ repository.code_duplication }} / 100</span>
           </div>
           <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

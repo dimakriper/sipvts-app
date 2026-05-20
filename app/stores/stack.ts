@@ -1,0 +1,131 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { $fetch } from 'ofetch'
+
+export interface DependencyRank {
+  name: string
+  count: number
+  percentage: number
+  cluster: string
+  clusterColor: string
+  topRelated: string[]
+}
+
+export interface ClusterInfo {
+  id: string
+  name: string
+  color: string
+  members: string[]
+}
+
+export interface DetectedStack {
+  name: string
+  members: string[]
+  projectCount: number
+}
+
+export interface GraphNode {
+  id: string
+  count: number
+  percentage: number
+  cluster: string
+  clusterColor: string
+}
+
+export interface GraphLink {
+  source: string
+  target: string
+  weight: number
+}
+
+export interface StackSearchResult {
+  language: string
+  keywords: string[]
+  reposAnalyzed: number
+  dependencies: DependencyRank[]
+  coOccurrenceMatrix: Record<string, Record<string, number>>
+  jaccardMatrix: Record<string, Record<string, number>>
+  clusters: ClusterInfo[]
+  stacks: DetectedStack[]
+  graphNodes: GraphNode[]
+  graphLinks: GraphLink[]
+}
+
+export const SUPPORTED_LANGUAGES = [
+  'JavaScript',
+  'Python'
+] as const
+
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
+
+export const useStackStore = defineStore('stack', () => {
+  const language = ref<string>('')
+  const keywords = ref<string>('')
+  const result = ref<StackSearchResult | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  // UI state
+  const selectedDep = ref<string | null>(null)
+  const activeTab = ref<'matrix' | 'table' | 'stacks'>('table')
+  const activeClusters = ref<Set<string>>(new Set())
+  const jaccardThreshold = ref(0.2)
+
+  async function search() {
+    if (!language.value.trim()) {
+      error.value = 'Выберите язык программирования'
+      return
+    }
+    loading.value = true
+    error.value = null
+    selectedDep.value = null
+    try {
+      const params = new URLSearchParams({ language: language.value })
+      const kw = keywords.value.trim()
+      if (kw) params.set('keywords', kw)
+      result.value = await $fetch<StackSearchResult>(`/api/stack/search?${params.toString()}`)
+      activeClusters.value = new Set(result.value.clusters.map(c => c.id))
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Ошибка при выполнении запроса'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function reset() {
+    language.value = ''
+    keywords.value = ''
+    result.value = null
+    error.value = null
+    selectedDep.value = null
+  }
+
+  function selectDep(name: string | null) {
+    selectedDep.value = selectedDep.value === name ? null : name
+  }
+
+  function toggleCluster(id: string) {
+    if (activeClusters.value.has(id)) {
+      activeClusters.value.delete(id)
+    } else {
+      activeClusters.value.add(id)
+    }
+  }
+
+  return {
+    language,
+    keywords,
+    result,
+    loading,
+    error,
+    selectedDep,
+    activeTab,
+    activeClusters,
+    jaccardThreshold,
+    search,
+    reset,
+    selectDep,
+    toggleCluster
+  }
+})
+

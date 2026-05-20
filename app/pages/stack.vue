@@ -1,0 +1,473 @@
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- ── Search bar ── -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex flex-wrap gap-3 items-end">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">
+              Язык
+            </label>
+            <select
+              v-model="store.language"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option
+                value=""
+                disabled
+              >
+                Выберите язык
+              </option>
+              <option
+                v-for="lang in SUPPORTED_LANGUAGES"
+                :key="lang"
+                :value="lang"
+              >
+                {{ lang }}
+              </option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">
+              Ключевые слова (через запятую)
+            </label>
+            <input
+              v-model="store.keywords"
+              type="text"
+              placeholder="api, rest, async..."
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              @keyup.enter="store.search"
+            >
+          </div>
+          <button
+            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium text-sm transition-colors"
+            :disabled="store.loading"
+            @click="store.search"
+          >
+            {{ store.loading ? 'Поиск...' : 'Анализировать' }}
+          </button>
+          <button
+            v-if="store.result"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors"
+            @click="store.reset"
+          >
+            Сбросить
+          </button>
+        </div>
+        <p
+          v-if="store.error"
+          class="mt-2 text-sm text-red-600 dark:text-red-400"
+        >
+          {{ store.error }}
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Empty / initial state ── -->
+    <div
+      v-if="!store.result && !store.loading"
+      class="flex flex-col items-center justify-center py-24 text-center px-4"
+    >
+      <div class="text-7xl mb-6">
+        🔍
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+        Поиск технологического стека
+      </h2>
+      <p class="text-gray-500 dark:text-gray-400 max-w-lg mb-8">
+        Выберите язык программирования и введите ключевые слова. Система проанализирует манифесты публичных репозиториев и покажет популярные зависимости, их связи и типичные стеки.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-2xl w-full">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div class="text-2xl mb-2">
+            📊
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">
+            Рейтинг зависимостей
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Частота использования в проектах
+          </p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div class="text-2xl mb-2">
+            🕸️
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">
+            Граф связей
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Интерактивный форс-граф совместной встречаемости
+          </p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div class="text-2xl mb-2">
+            🧩
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">
+            Детекция стеков
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Автоматическое выявление типичных стеков
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Loading ── -->
+    <div
+      v-else-if="store.loading"
+      class="flex items-center justify-center py-24"
+    >
+      <div class="text-center">
+        <div class="inline-block w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p class="text-gray-500 dark:text-gray-400">
+          Анализируем репозитории...
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Results layout ── -->
+    <div
+      v-else-if="store.result"
+      class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6"
+    >
+      <!-- Stats strip -->
+      <div class="flex flex-wrap gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl px-5 py-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ store.result.reposAnalyzed }}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            репозиториев проанализировано
+          </span>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl px-5 py-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ store.result.dependencies.length }}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            зависимостей найдено
+          </span>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl px-5 py-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ store.result.graphLinks.length }}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            значимых связей
+          </span>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl px-5 py-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ store.result.stacks.length }}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            стека обнаружено
+          </span>
+        </div>
+      </div>
+
+      <!-- Main 3-column layout -->
+      <div class="flex gap-6 items-start">
+        <!-- LEFT SIDEBAR -->
+        <aside class="w-56 shrink-0 space-y-4 sticky top-4">
+          <!-- Cluster toggles -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+              Кластеры
+            </h3>
+            <div class="space-y-2">
+              <label
+                v-for="cluster in store.result.clusters"
+                :key="cluster.id"
+                class="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  :checked="store.activeClusters.has(cluster.id)"
+                  class="rounded"
+                  @change="store.toggleCluster(cluster.id)"
+                >
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  :style="{ backgroundColor: cluster.color }"
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300">{{ cluster.name }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Jaccard threshold -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+              Порог Jaccard
+            </h3>
+            <input
+              v-model.number="store.jaccardThreshold"
+              type="range"
+              min="0"
+              max="0.9"
+              step="0.05"
+              class="w-full"
+            >
+            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <span>Все связи</span>
+              <span class="font-mono font-semibold text-gray-700 dark:text-gray-200">{{ store.jaccardThreshold.toFixed(2) }}</span>
+              <span>Сильные</span>
+            </div>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+              Видимых рёбер: {{ visibleLinks }}
+            </p>
+          </div>
+
+          <!-- Selected dep quick info -->
+          <div
+            v-if="selectedDepInfo"
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Выбрано
+              </h3>
+              <button
+                class="text-xs text-gray-400 hover:text-gray-600"
+                @click="store.selectDep(null)"
+              >
+                ✕
+              </button>
+            </div>
+            <p class="font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+              {{ selectedDepInfo.name }}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+              {{ selectedDepInfo.count }} проектов ({{ selectedDepInfo.percentage }}%)
+            </p>
+            <span
+              class="inline-block mt-2 px-2 py-0.5 rounded-full text-white text-xs"
+              :style="{ backgroundColor: selectedDepInfo.clusterColor }"
+            >
+              {{ selectedDepInfo.cluster }}
+            </span>
+          </div>
+        </aside>
+
+        <!-- CENTER: Graph + Tabs -->
+        <div class="flex-1 min-w-0 space-y-4">
+          <!-- Graph -->
+          <div
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            style="height: 520px"
+          >
+            <ClientOnly>
+              <StackForceGraph
+                :nodes="store.result.graphNodes"
+                :links="store.result.graphLinks"
+                :clusters="store.result.clusters"
+                :selected-dep="store.selectedDep"
+                :active-clusters="store.activeClusters"
+                :jaccard-threshold="store.jaccardThreshold"
+                @select-dep="store.selectDep"
+              />
+              <template #fallback>
+                <div class="w-full h-full flex items-center justify-center text-gray-400">
+                  Загрузка графа...
+                </div>
+              </template>
+            </ClientOnly>
+          </div>
+
+          <!-- Bottom Tabs -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+              <button
+                v-for="tab in tabs"
+                :key="tab.id"
+                class="px-5 py-3 text-sm font-medium transition-colors"
+                :class="
+                  store.activeTab === tab.id
+                    ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 -mb-px'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                "
+                @click="setActiveTab(tab.id)"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
+            <div class="p-5">
+              <StackDependencyTable
+                v-if="store.activeTab === 'table'"
+                :dependencies="store.result.dependencies"
+                :selected-dep="store.selectedDep"
+                @select-dep="store.selectDep"
+              />
+              <StackCoOccurrenceMatrix
+                v-else-if="store.activeTab === 'matrix'"
+                :jaccard-matrix="store.result.jaccardMatrix"
+                :dependencies="store.result.dependencies"
+              />
+              <StackCards
+                v-else-if="store.activeTab === 'stacks'"
+                :stacks="store.result.stacks"
+                :dependencies="store.result.dependencies"
+                @select-dep="store.selectDep"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Dep details -->
+        <aside
+          v-if="selectedDepInfo"
+          class="w-64 shrink-0 sticky top-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5"
+        >
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-900 dark:text-white font-mono">
+              {{ selectedDepInfo.name }}
+            </h3>
+            <button
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              @click="store.selectDep(null)"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                {{ selectedDepInfo.count }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                проектов
+              </p>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
+              <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                {{ selectedDepInfo.percentage }}%
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                охват
+              </p>
+            </div>
+          </div>
+
+          <!-- Cluster -->
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
+              Кластер
+            </p>
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full text-white text-sm font-medium"
+              :style="{ backgroundColor: selectedDepInfo.clusterColor }"
+            >
+              {{ selectedDepInfo.cluster }}
+            </span>
+          </div>
+
+          <!-- Top related -->
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
+              Связанные зависимости
+            </p>
+            <div class="space-y-2">
+              <div
+                v-for="rel in detailedRelated"
+                :key="rel.name"
+                class="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded p-1 -mx-1 transition-colors"
+                @click="store.selectDep(rel.name)"
+              >
+                <span class="font-mono text-sm text-gray-800 dark:text-gray-200">{{ rel.name }}</span>
+                <span class="text-xs font-semibold text-indigo-500">{{ rel.jaccard.toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stack membership -->
+          <div v-if="memberOfStacks.length">
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
+              Входит в стеки
+            </p>
+            <div class="space-y-1.5">
+              <div
+                v-for="stack in memberOfStacks"
+                :key="stack.name"
+                class="flex items-center justify-between text-sm"
+              >
+                <span class="text-gray-700 dark:text-gray-300">{{ stack.name }}</span>
+                <span class="text-xs text-gray-400">{{ stack.projectCount }} пр.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jaccard scores bar chart -->
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
+              Top Jaccard
+            </p>
+            <div class="space-y-1.5">
+              <div
+                v-for="item in topJaccardScores"
+                :key="item.name"
+                class="flex items-center gap-2 text-xs"
+              >
+                <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    class="h-full rounded-full bg-indigo-500"
+                    :style="{ width: (item.score * 100) + '%' }"
+                  />
+                </div>
+                <span class="font-mono text-gray-500 dark:text-gray-400 min-w-[60px] text-right">{{ item.name }}</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useStackStore, SUPPORTED_LANGUAGES } from '../stores/stack'
+
+const store = useStackStore()
+
+function setActiveTab(id: string) {
+  store.activeTab = id as typeof store.activeTab
+}
+
+const tabs = [
+  { id: 'table', label: '📋 Рейтинг' },
+  { id: 'matrix', label: '🗂 Матрица Jaccard' },
+  { id: 'stacks', label: '🧩 Стеки' }
+]
+
+const selectedDepInfo = computed(() =>
+  store.selectedDep
+    ? store.result?.dependencies.find(d => d.name === store.selectedDep) ?? null
+    : null
+)
+
+const visibleLinks = computed(() =>
+  store.result?.graphLinks.filter(l => l.weight >= store.jaccardThreshold).length ?? 0
+)
+
+const detailedRelated = computed(() => {
+  if (!selectedDepInfo.value || !store.result) return []
+  const row = store.result.jaccardMatrix[selectedDepInfo.value.name] ?? {}
+  return Object.entries(row)
+    .filter(([name]) => name !== selectedDepInfo.value!.name)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, 6)
+    .map(([name, jaccard]) => ({ name, jaccard }))
+})
+
+const memberOfStacks = computed(() => {
+  if (!selectedDepInfo.value || !store.result) return []
+  return store.result.stacks.filter(s => s.members.includes(selectedDepInfo.value!.name))
+})
+
+const topJaccardScores = computed(() => {
+  if (!selectedDepInfo.value || !store.result) return []
+  const row = store.result.jaccardMatrix[selectedDepInfo.value.name] ?? {}
+  return Object.entries(row)
+    .filter(([name]) => name !== selectedDepInfo.value!.name)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .slice(0, 8)
+    .map(([name, score]) => ({ name, score }))
+})
+</script>

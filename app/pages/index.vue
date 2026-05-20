@@ -1,3 +1,6 @@
 <script setup lang="ts">
-navigateTo('/analytics', { replace: true })
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+void router.replace('/analytics')
 </script>

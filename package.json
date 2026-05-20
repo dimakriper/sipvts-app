@@ -16,6 +16,7 @@
     "@nuxt/ui": "^4.7.1",
     "@pinia/nuxt": "^0.11.3",
     "chart.js": "^4.5.1",
+    "force-graph": "^1.51.4",
     "mongodb": "^7.2.0",
     "nuxt": "^4.4.5",
     "pinia": "^3.0.4",

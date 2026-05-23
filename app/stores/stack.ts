@@ -2,40 +2,48 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { $fetch } from 'ofetch'
 
-export interface DependencyRank {
-  name: string
-  count: number
-  percentage: number
-  cluster: string
-  clusterColor: string
-  topRelated: string[]
-}
-
-export interface ClusterInfo {
-  id: string
+export interface CommunityInfo {
+  id: number
   name: string
   color: string
   members: string[]
 }
 
-export interface DetectedStack {
+export interface DependencyRank {
   name: string
-  members: string[]
-  projectCount: number
+  count: number
+  percentage: number
+  communityId: number
+  communityColor: string
+  topRelated: string[]
 }
 
 export interface GraphNode {
   id: string
   count: number
   percentage: number
-  cluster: string
-  clusterColor: string
+  communityId: number
+  communityColor: string
 }
 
 export interface GraphLink {
   source: string
   target: string
   weight: number
+}
+
+export interface FrequentItemset {
+  items: string[]
+  support: number
+  count: number
+}
+
+export interface AssociationRule {
+  antecedent: string[]
+  consequent: string[]
+  support: number
+  confidence: number
+  lift: number
 }
 
 export interface StackSearchResult {
@@ -45,10 +53,11 @@ export interface StackSearchResult {
   dependencies: DependencyRank[]
   coOccurrenceMatrix: Record<string, Record<string, number>>
   jaccardMatrix: Record<string, Record<string, number>>
-  clusters: ClusterInfo[]
-  stacks: DetectedStack[]
+  communities: CommunityInfo[]
   graphNodes: GraphNode[]
   graphLinks: GraphLink[]
+  frequentItemsets: FrequentItemset[]
+  associationRules: AssociationRule[]
 }
 
 export const SUPPORTED_LANGUAGES = [
@@ -68,7 +77,7 @@ export const useStackStore = defineStore('stack', () => {
   // UI state
   const selectedDep = ref<string | null>(null)
   const activeTab = ref<'matrix' | 'table' | 'stacks'>('table')
-  const activeClusters = ref<Set<string>>(new Set())
+  const activeCommunities = ref<Set<number>>(new Set())
   const jaccardThreshold = ref(0.2)
 
   async function search() {
@@ -84,7 +93,7 @@ export const useStackStore = defineStore('stack', () => {
       const kw = keywords.value.trim()
       if (kw) params.set('keywords', kw)
       result.value = await $fetch<StackSearchResult>(`/api/stack/search?${params.toString()}`)
-      activeClusters.value = new Set(result.value.clusters.map(c => c.id))
+      activeCommunities.value = new Set(result.value.communities.map(c => c.id))
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Ошибка при выполнении запроса'
     } finally {
@@ -104,11 +113,11 @@ export const useStackStore = defineStore('stack', () => {
     selectedDep.value = selectedDep.value === name ? null : name
   }
 
-  function toggleCluster(id: string) {
-    if (activeClusters.value.has(id)) {
-      activeClusters.value.delete(id)
+  function toggleCommunity(id: number) {
+    if (activeCommunities.value.has(id)) {
+      activeCommunities.value.delete(id)
     } else {
-      activeClusters.value.add(id)
+      activeCommunities.value.add(id)
     }
   }
 
@@ -120,12 +129,12 @@ export const useStackStore = defineStore('stack', () => {
     error,
     selectedDep,
     activeTab,
-    activeClusters,
+    activeCommunities,
     jaccardThreshold,
     search,
     reset,
     selectDep,
-    toggleCluster
+    toggleCommunity
   }
 })
 

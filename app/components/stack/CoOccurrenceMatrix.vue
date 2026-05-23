@@ -19,7 +19,7 @@
           type="checkbox"
           class="rounded"
         >
-        Показать значения
+        Показать кол-во совместных вхождений
       </label>
     </div>
 
@@ -64,14 +64,14 @@
                   class="text-[9px] font-mono select-none"
                   :style="{ color: getScore(row, col) > 0.5 ? '#fff' : '#374151' }"
                 >
-                  {{ getScore(row, col).toFixed(2) }}
+                  {{ getCoOcc(row, col) }}
                 </span>
               </div>
               <!-- Hover tooltip -->
               <div class="absolute hidden group-hover:flex z-30 bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none">
                 <div class="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
                   <span class="font-bold">{{ row }}</span> ↔ <span class="font-bold">{{ col }}</span>:
-                  {{ getScore(row, col).toFixed(3) }}
+                  {{ getCoOcc(row, col) }} проектов (Jaccard {{ getScore(row, col).toFixed(3) }})
                 </div>
               </div>
             </td>
@@ -81,7 +81,7 @@
     </div>
 
     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-      Ячейки с Jaccard &lt; {{ threshold.toFixed(2) }} показаны серым. Диагональ = 1.0.
+      Интенсивность цвета — Jaccard (0–1). Числа в ячейках — количество проектов с обеими зависимостями. Ячейки с Jaccard &lt; {{ threshold.toFixed(2) }} показаны серым.
     </p>
   </div>
 </template>
@@ -91,6 +91,7 @@ import { ref, computed } from 'vue'
 import type { DependencyRank } from '../../stores/stack'
 
 const props = defineProps<{
+  coOccurrenceMatrix: Record<string, Record<string, number>>
   jaccardMatrix: Record<string, Record<string, number>>
   dependencies: DependencyRank[]
 }>()
@@ -98,15 +99,19 @@ const props = defineProps<{
 const threshold = ref(0.15)
 const showLabels = ref(false)
 
-// Sort deps: cluster together by grouping on cluster name
+// Sort by descending count so the most popular dependencies come first
 const names = computed(() =>
   [...props.dependencies]
-    .sort((a, b) => a.cluster.localeCompare(b.cluster) || b.count - a.count)
+    .sort((a, b) => b.count - a.count)
     .map(d => d.name)
 )
 
 function getScore(row: string, col: string): number {
   return props.jaccardMatrix[row]?.[col] ?? 0
+}
+
+function getCoOcc(row: string, col: string): number {
+  return props.coOccurrenceMatrix[row]?.[col] ?? 0
 }
 
 function cellStyle(row: string, col: string) {

@@ -38,7 +38,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DetectedStack, DependencyRank } from '../../stores/stack'
+import type { DependencyRank } from '../../stores/stack'
+
+interface DetectedStack {
+  name: string
+  members: string[]
+  projectCount: number
+}
 
 const props = defineProps<{
   stacks: DetectedStack[]
@@ -50,7 +56,7 @@ defineEmits<{ selectDep: [name: string] }>()
 const depColorMap = computed(() => {
   const map: Record<string, string> = {}
   for (const dep of props.dependencies) {
-    map[dep.name] = dep.clusterColor
+    map[dep.name] = dep.communityColor
   }
   return map
 })

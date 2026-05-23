@@ -15,29 +15,33 @@
         {{ hoveredNode.id }}
       </p>
       <p class="text-gray-300">
-        {{ hoveredNode.count }} ({{ hoveredNode.percentage }}%)
+        {{ hoveredNode.count }} проектов ({{ hoveredNode.percentage }}%)
       </p>
       <p
-        class="mt-1"
-        :style="{ color: hoveredNode.clusterColor }"
+        class="mt-1 text-xs"
+        :style="{ color: hoveredNode.communityColor }"
       >
-        {{ hoveredNode.cluster }}
+        {{ communityName(hoveredNode.communityId) }}
       </p>
     </div>
 
-    <!-- Legend -->
+    <!-- Community legend -->
     <div class="absolute bottom-3 left-3 flex flex-col gap-1">
+      <p class="text-[10px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+        Сообщества
+      </p>
       <div
-        v-for="cluster in clusters"
-        :key="cluster.id"
-        class="flex items-center gap-1.5 text-xs"
-        :class="activeClusters.has(cluster.id) ? 'opacity-100' : 'opacity-30'"
+        v-for="c in communities"
+        :key="c.id"
+        class="flex items-center gap-1.5 text-xs transition-opacity"
+        :class="activeCommunities.has(c.id) ? 'opacity-100' : 'opacity-30'"
       >
         <span
           class="w-2.5 h-2.5 rounded-full shrink-0"
-          :style="{ backgroundColor: cluster.color }"
+          :style="{ backgroundColor: c.color }"
         />
-        <span class="text-gray-700 dark:text-gray-300">{{ cluster.name }}</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ c.name }}</span>
+        <span class="text-gray-400">({{ c.members.length }})</span>
       </div>
     </div>
 
@@ -61,14 +65,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import type { GraphNode, GraphLink, ClusterInfo } from '../../stores/stack'
+import type { GraphNode, GraphLink, CommunityInfo } from '../../stores/stack'
 
 interface Props {
   nodes: GraphNode[]
   links: GraphLink[]
-  clusters: ClusterInfo[]
+  communities: CommunityInfo[]
   selectedDep: string | null
-  activeClusters: Set<string>
+  activeCommunities: Set<number>
   jaccardThreshold: number
 }
 
@@ -87,13 +91,12 @@ type FGInstance = any
 let fg: FGInstance | null = null
 let resizeObserver: ResizeObserver | null = null
 
+function communityName(id: number): string {
+  return props.communities.find(c => c.id === id)?.name ?? `Сообщество ${id + 1}`
+}
+
 function buildData() {
-  const activeClusterNames = new Set(
-    props.clusters
-      .filter(c => props.activeClusters.has(c.id))
-      .map(c => c.name)
-  )
-  const activeNodes = props.nodes.filter(n => activeClusterNames.has(n.cluster))
+  const activeNodes = props.nodes.filter(n => props.activeCommunities.has(n.communityId))
   const activeNodeIds = new Set(activeNodes.map(n => n.id))
 
   const neighbors = new Set<string>()
@@ -117,8 +120,8 @@ function buildData() {
       ...n,
       val: Math.max(1, n.count / 10),
       color: props.selectedDep
-        ? (neighbors.has(n.id) ? n.clusterColor : 'rgba(180,180,180,0.25)')
-        : n.clusterColor
+        ? (neighbors.has(n.id) ? n.communityColor : 'rgba(180,180,180,0.25)')
+        : n.communityColor
     })),
     links: activeLinks.map(l => ({
       ...l,
@@ -204,7 +207,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [props.nodes, props.links, props.selectedDep, props.activeClusters, props.jaccardThreshold],
+  () => [props.nodes, props.links, props.selectedDep, props.activeCommunities, props.jaccardThreshold],
   () => { if (fg) fg.graphData(buildData()) },
   { deep: true }
 )

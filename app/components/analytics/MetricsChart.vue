@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+  <div>
+    <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
       {{ title }}
-    </h3>
+    </p>
 
-    <div class="relative h-80">
+    <div class="relative h-48">
       <canvas ref="chartCanvas"></canvas>
     </div>
   </div>
@@ -14,6 +14,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import type { ChartConfiguration } from 'chart.js'
+import type { DataPoint } from '../../stores/analytics'
 
 Chart.register(...registerables)
 
@@ -21,10 +22,10 @@ interface Repository {
   id: string
   name: string
   owner: string
-  starsHistory: number[]
-  commitsHistory: number[]
-  issuesHistory: number[]
-  prHistory: number[]
+  starsHistory: DataPoint[]
+  commitsHistory: DataPoint[]
+  issuesHistory: DataPoint[]
+  prHistory: DataPoint[]
 }
 
 const props = defineProps<{
@@ -63,8 +64,15 @@ function getBorderColor(index: number): string {
   return borderColors[index % borderColors.length]!
 }
 
-function getMetricData(repo: Repository): number[] {
+function getMetricData(repo: Repository): { t: number; v: number }[] {
   return repo[props.metricKey]
+}
+
+function formatMonthYear(ts: number): string {
+  const d = new Date(ts)
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const yyyy = d.getUTCFullYear()
+  return `${mm}/${yyyy}`
 }
 
 function initializeChart() {
@@ -75,8 +83,22 @@ function initializeChart() {
     chartInstance.destroy()
   }
 
+  // Build shared label axis from all repos' timestamps
+  const allPoints = props.repositories.flatMap(r => getMetricData(r))
+  const uniqueTs = [...new Set(allPoints.map(p => p.t))].sort((a, b) => a - b)
+  const labels = uniqueTs.length > 0
+    ? uniqueTs.map(formatMonthYear)
+    : []
+
+  if (labels.length === 0) return
+
+  // Each dataset aligned to the shared label array (null for missing months)
   const datasets = props.repositories.map((repo, idx) => {
-    const data = getMetricData(repo)
+    const raw = getMetricData(repo)
+    const data = uniqueTs.map(ts => {
+      const point = raw.find(p => p.t === ts)
+      return point !== undefined ? point.v : null
+    })
     const baseConfig = {
       label: `${repo.owner}/${repo.name}`,
       data,
@@ -107,10 +129,7 @@ function initializeChart() {
   const config: ChartConfiguration = {
     type: props.type,
     data: {
-      labels: Array.from({ length: Math.max(...props.repositories.map((r) => getMetricData(r).length), 0) }, (_, i) => {
-        const months = ['\u042f\u043d\u0432', '\u0424\u0435\u0432', '\u041c\u0430\u0440', '\u0410\u043f\u0440', '\u041c\u0430\u0439', '\u0418\u044e\u043d', '\u0418\u044e\u043b', '\u0410\u0432\u0433', '\u0421\u0435\u043d', '\u041e\u043a\u0442', '\u041d\u043e\u044f', '\u0414\u0435\u043a']
-        return months[i] ?? `\u041c${i + 1}`
-      }),
+      labels,
       datasets: datasets as any,
     },
     options: {
@@ -118,6 +137,7 @@ function initializeChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
+          display: props.repositories.length > 1,
           position: 'bottom' as const,
           labels: {
             usePointStyle: true,

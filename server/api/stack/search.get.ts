@@ -1,6 +1,6 @@
 import { searchStack, SUPPORTED_LANGUAGES } from '../../services/stackSearch'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const language = (query.language as string | undefined)?.trim() ?? ''
   const keywordsRaw = (query.keywords as string | undefined) ?? ''
@@ -21,5 +21,5 @@ export default defineEventHandler((event) => {
     .map(k => k.trim())
     .filter(Boolean)
 
-  return searchStack(language, keywords)
+  return await searchStack(language, keywords)
 })

@@ -59,51 +59,15 @@
         <!-- Repositories Grid -->
         <div
           v-if="store.repositories.length > 0"
-          class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+          class="flex flex-wrap gap-6 mb-8"
         >
           <AnalyticsRepositoryCard
             v-for="repo in store.repositories"
             :key="repo.id"
             :repository="repo"
+            class="basis-[33vw] grow shrink-0 max-w-[50vw]"
             @remove="removeRepository"
           />
-        </div>
-
-        <!-- Comparison Section -->
-        <div
-          v-if="store.repositories.length > 1"
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
-        >
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            Сравнение репозиториев
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AnalyticsMetricsChart
-              title="Рост звёзд"
-              :repositories="store.repositories"
-              metric-key="starsHistory"
-              type="line"
-            />
-            <AnalyticsMetricsChart
-              title="Коммиты по месяцам"
-              :repositories="store.repositories"
-              metric-key="commitsHistory"
-              type="bar"
-            />
-            <AnalyticsMetricsChart
-              title="Рост задач"
-              :repositories="store.repositories"
-              metric-key="issuesHistory"
-              type="line"
-            />
-            <AnalyticsMetricsChart
-              title="Pull Requestы по месяцам"
-              :repositories="store.repositories"
-              metric-key="prHistory"
-              type="bar"
-            />
-          </div>
         </div>
 
         <!-- Empty State -->

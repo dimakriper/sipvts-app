@@ -18,8 +18,8 @@
         <option value="name">
           По названию
         </option>
-        <option value="cluster">
-          По кластеру
+        <option value="community">
+          По сообществу
         </option>
       </select>
       <button
@@ -42,7 +42,7 @@
               Зависимость
             </th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
-              Кластер
+              Сообщество
             </th>
             <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
               Проектов
@@ -75,10 +75,10 @@
             </td>
             <td class="px-4 py-3">
               <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white text-xs font-medium"
-                :style="{ backgroundColor: dep.clusterColor }"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-white text-xs font-medium"
+                :style="{ backgroundColor: dep.communityColor }"
               >
-                {{ dep.cluster }}
+                С {{ dep.communityId + 1 }}
               </span>
             </td>
             <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
@@ -89,7 +89,7 @@
                 <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden min-w-[60px]">
                   <div
                     class="h-full rounded-full"
-                    :style="{ width: dep.percentage + '%', backgroundColor: dep.clusterColor }"
+                    :style="{ width: dep.percentage + '%', backgroundColor: dep.communityColor }"
                   />
                 </div>
                 <span class="text-xs text-gray-500 dark:text-gray-400 min-w-[36px] text-right">{{ dep.percentage }}%</span>
@@ -133,7 +133,7 @@ const props = defineProps<{
 defineEmits<{ selectDep: [name: string] }>()
 
 const search = ref('')
-const sortKey = ref<'count' | 'name' | 'cluster'>('count')
+const sortKey = ref<'count' | 'name' | 'community'>('count')
 const sortDir = ref<'asc' | 'desc'>('desc')
 
 function toggleSortDir() {
@@ -143,13 +143,12 @@ function toggleSortDir() {
 const filtered = computed(() => {
   let list = props.dependencies.filter(d =>
     d.name.toLowerCase().includes(search.value.toLowerCase())
-    || d.cluster.toLowerCase().includes(search.value.toLowerCase())
   )
   list = [...list].sort((a, b) => {
     let cmp = 0
     if (sortKey.value === 'count') cmp = a.count - b.count
     else if (sortKey.value === 'name') cmp = a.name.localeCompare(b.name)
-    else cmp = a.cluster.localeCompare(b.cluster)
+    else cmp = a.communityId - b.communityId || b.count - a.count
     return sortDir.value === 'asc' ? cmp : -cmp
   })
   return list

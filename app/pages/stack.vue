@@ -152,44 +152,12 @@
             значимых связей
           </span>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl px-5 py-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ store.result.stacks.length }}</span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
-            стека обнаружено
-          </span>
-        </div>
       </div>
 
       <!-- Main 3-column layout -->
       <div class="flex gap-6 items-start">
         <!-- LEFT SIDEBAR -->
         <aside class="w-56 shrink-0 space-y-4 sticky top-4">
-          <!-- Cluster toggles -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
-              Кластеры
-            </h3>
-            <div class="space-y-2">
-              <label
-                v-for="cluster in store.result.clusters"
-                :key="cluster.id"
-                class="flex items-center gap-2 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  :checked="store.activeClusters.has(cluster.id)"
-                  class="rounded"
-                  @change="store.toggleCluster(cluster.id)"
-                >
-                <span
-                  class="w-2.5 h-2.5 rounded-full shrink-0"
-                  :style="{ backgroundColor: cluster.color }"
-                />
-                <span class="text-sm text-gray-700 dark:text-gray-300">{{ cluster.name }}</span>
-              </label>
-            </div>
-          </div>
-
           <!-- Jaccard threshold -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
@@ -211,6 +179,36 @@
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
               Видимых рёбер: {{ visibleLinks }}
             </p>
+          </div>
+
+          <!-- Community toggles -->
+          <div
+            v-if="store.result"
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+          >
+            <h3 class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+              Сообщества
+            </h3>
+            <div class="space-y-2">
+              <label
+                v-for="c in store.result.communities"
+                :key="c.id"
+                class="flex items-center gap-2 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  :checked="store.activeCommunities.has(c.id)"
+                  class="rounded"
+                  @change="store.toggleCommunity(c.id)"
+                >
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  :style="{ backgroundColor: c.color }"
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300">{{ c.name }}</span>
+                <span class="text-xs text-gray-400">({{ c.members.length }})</span>
+              </label>
+            </div>
           </div>
 
           <!-- Selected dep quick info -->
@@ -237,9 +235,9 @@
             </p>
             <span
               class="inline-block mt-2 px-2 py-0.5 rounded-full text-white text-xs"
-              :style="{ backgroundColor: selectedDepInfo.clusterColor }"
+              :style="{ backgroundColor: selectedDepInfo.communityColor }"
             >
-              {{ selectedDepInfo.cluster }}
+              {{ communityLabel(selectedDepInfo.communityId) }}
             </span>
           </div>
         </aside>
@@ -255,10 +253,10 @@
               <StackForceGraph
                 :nodes="store.result.graphNodes"
                 :links="store.result.graphLinks"
-                :clusters="store.result.clusters"
                 :selected-dep="store.selectedDep"
-                :active-clusters="store.activeClusters"
                 :jaccard-threshold="store.jaccardThreshold"
+                :communities="store.result.communities"
+                :active-communities="store.activeCommunities"
                 @select-dep="store.selectDep"
               />
               <template #fallback>
@@ -293,16 +291,18 @@
                 :selected-dep="store.selectedDep"
                 @select-dep="store.selectDep"
               />
-              <StackCoOccurrenceMatrix
-                v-else-if="store.activeTab === 'matrix'"
-                :jaccard-matrix="store.result.jaccardMatrix"
-                :dependencies="store.result.dependencies"
-              />
-              <StackCards
+              <StackFrequentItemsets
                 v-else-if="store.activeTab === 'stacks'"
-                :stacks="store.result.stacks"
+                :frequent-itemsets="store.result.frequentItemsets"
+                :association-rules="store.result.associationRules"
                 :dependencies="store.result.dependencies"
                 @select-dep="store.selectDep"
+              />
+              <StackCoOccurrenceMatrix
+                v-else-if="store.activeTab === 'matrix'"
+                :co-occurrence-matrix="store.result.coOccurrenceMatrix"
+                :jaccard-matrix="store.result.jaccardMatrix"
+                :dependencies="store.result.dependencies"
               />
             </div>
           </div>
@@ -345,16 +345,16 @@
             </div>
           </div>
 
-          <!-- Cluster -->
+          <!-- Community -->
           <div>
             <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
-              Кластер
+              Сообщество
             </p>
             <span
               class="inline-flex items-center px-3 py-1 rounded-full text-white text-sm font-medium"
-              :style="{ backgroundColor: selectedDepInfo.clusterColor }"
+              :style="{ backgroundColor: selectedDepInfo.communityColor }"
             >
-              {{ selectedDepInfo.cluster }}
+              {{ communityLabel(selectedDepInfo.communityId) }}
             </span>
           </div>
 
@@ -372,23 +372,6 @@
               >
                 <span class="font-mono text-sm text-gray-800 dark:text-gray-200">{{ rel.name }}</span>
                 <span class="text-xs font-semibold text-indigo-500">{{ rel.jaccard.toFixed(2) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Stack membership -->
-          <div v-if="memberOfStacks.length">
-            <p class="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
-              Входит в стеки
-            </p>
-            <div class="space-y-1.5">
-              <div
-                v-for="stack in memberOfStacks"
-                :key="stack.name"
-                class="flex items-center justify-between text-sm"
-              >
-                <span class="text-gray-700 dark:text-gray-300">{{ stack.name }}</span>
-                <span class="text-xs text-gray-400">{{ stack.projectCount }} пр.</span>
               </div>
             </div>
           </div>
@@ -432,9 +415,13 @@ function setActiveTab(id: string) {
 
 const tabs = [
   { id: 'table', label: '📋 Рейтинг' },
-  { id: 'matrix', label: '🗂 Матрица Jaccard' },
-  { id: 'stacks', label: '🧩 Стеки' }
+  { id: 'stacks', label: '🧩 Стеки' },
+  { id: 'matrix', label: '🔗 Матрица совместности' }
 ]
+
+function communityLabel(id: number): string {
+  return store.result?.communities.find(c => c.id === id)?.name ?? `Сообщество ${id + 1}`
+}
 
 const selectedDepInfo = computed(() =>
   store.selectedDep
@@ -454,11 +441,6 @@ const detailedRelated = computed(() => {
     .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 6)
     .map(([name, jaccard]) => ({ name, jaccard }))
-})
-
-const memberOfStacks = computed(() => {
-  if (!selectedDepInfo.value || !store.result) return []
-  return store.result.stacks.filter(s => s.members.includes(selectedDepInfo.value!.name))
 })
 
 const topJaccardScores = computed(() => {

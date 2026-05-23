@@ -66,3 +66,15 @@ const tabs: { id: StackTab; label: string }[] = [
 ````
 
 If it still shows blank, the next check is that `store.result.stacks` is not empty and `StackStackCards` is resolvable (component name/path).
+
+---
+
+_**User (2026-05-20 19:03:44Z)**_
+
+pls do fix
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Let me look at the relevant files to understand the actual issue.

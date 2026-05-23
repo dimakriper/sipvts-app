@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 relative">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ">
     <!-- Remove button -->
     <button
       @click="$emit('remove', repository.id)"

@@ -59,15 +59,19 @@
         <!-- Repositories Grid -->
         <div
           v-if="store.repositories.length > 0"
-          class="flex flex-wrap gap-6 mb-8"
+          class="flex flex-wrap gap-5 items-stretch"
         >
-          <AnalyticsRepositoryCard
+          <div
             v-for="repo in store.repositories"
             :key="repo.id"
-            :repository="repo"
-            class="basis-[33vw] grow shrink-0 max-w-[50vw]"
-            @remove="removeRepository"
-          />
+            class="min-w-70 flex-1 flex flex-col self-stretch"
+          >
+            <AnalyticsRepositoryCard
+              class="flex-1 flex flex-col"
+              :repository="repo"
+              @remove="removeRepository"
+            />
+          </div>
         </div>
 
         <!-- Empty State -->

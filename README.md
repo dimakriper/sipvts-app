@@ -34,7 +34,7 @@ Built with **Nuxt 4**, **Vue 3**, **TypeScript**, **Pinia**, and the **GitHub RE
 ### Install dependencies
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### Environment variables
@@ -54,14 +54,14 @@ Required scopes: **Public repositories (read-only)** — no extra permissions ne
 ### Run development server
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 ### Build for production
 
 ```bash
-pnpm build
-pnpm preview
+npm run build
+npm run preview
 ```
 
 ---

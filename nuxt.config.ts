@@ -6,6 +6,12 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
 
+  ui: {
+    // Disable automatic @nuxt/fonts integration to avoid remote font provider initialisation
+    // which can fail in some network environments (unifont/fontsource errors).
+    fonts: false
+  },
+
   devtools: {
     enabled: true
   },

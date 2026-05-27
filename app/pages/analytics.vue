@@ -158,7 +158,7 @@ async function addRepository() {
 
   try {
     store.isLoading = true
-    const newRepo = await $fetch('/api/analytics/repository', {
+    const newRepo = await $fetch('/api/analytics/repository-live', {
       query: { owner: repoInfo.owner, repo: repoInfo.repo }
     })
     const success = store.addRepository(newRepo)

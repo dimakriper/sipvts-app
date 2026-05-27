@@ -144,23 +144,11 @@ export async function searchStackFromGitHub(
       }
     }
   }
+  console.log(projects)
 
   if (Object.keys(projects).length === 0) {
     throw new Error('No repositories with parseable manifests found on GitHub')
   }
 
-  // Post-filter: keep only repos that actually use the query as a dependency substring
-  const filtered = query.trim()
-    ? Object.fromEntries(
-        Object.entries(projects).filter(([, deps]) =>
-          deps.some(d => d.toLowerCase().includes(query.trim().toLowerCase()))
-        )
-      )
-    : projects
-
-  if (Object.keys(filtered).length === 0) {
-    throw new Error(`No repositories found that use "${query}" as a dependency`)
-  }
-
-  return analyzeProjects(language, query.trim() ? [query.trim()] : [], filtered)
+  return analyzeProjects(language, query.trim() ? [query.trim()] : [], projects)
 }

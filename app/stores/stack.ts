@@ -92,7 +92,7 @@ export const useStackStore = defineStore('stack', () => {
       const params = new URLSearchParams({ language: language.value })
       const q = query.value.trim()
       if (q) params.set('keywords', q)
-      result.value = await $fetch<StackSearchResult>(`/api/stack/search?${params.toString()}`)
+      result.value = await $fetch<StackSearchResult>(`/api/stack/search-live?${params.toString()}`)
       activeCommunities.value = new Set(result.value.communities.map(c => c.id))
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Ошибка при выполнении запроса'

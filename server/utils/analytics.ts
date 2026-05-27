@@ -1,3 +1,8 @@
+import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
+
+const require = createRequire(import.meta.url)
+
 export type DataPoint = { t: number, v: number }
 export interface Repository {
   id: string
@@ -130,67 +135,72 @@ export function generateMockRepo(owner: string, name: string): Repository {
   }
 }
 
+import vueData from '../data/vue.json' with { type: 'json' }
+import angularData from '../data/angular.json' with { type: 'json' }
+
 export const seedData: Repository[] = [
-  {
-    id: 'vuejs-core',
-    url: 'https://github.com/vuejs/core',
-    name: 'core',
-    owner: 'vuejs',
-    description: 'Vue.js is a JavaScript framework for building user interfaces.',
-    createdAt: '2021-01-16T00:00:00Z',
-    pushedAt: '2024-05-20T12:34:00Z',
-    size: 28500,
-    languages: { TypeScript: 8200000, JavaScript: 420000, HTML: 15000, CSS: 8000 },
-    stars: 45200,
-    forks: 9800,
-    watchers: 1200,
-    openIssues: 324,
-    closedIssues: 2800,
-    avgIssueCloseDays: 12,
-    openPRs: 48,
-    mergedPRs: 4200,
-    closedPRs: 320,
-    releasesCount: 82,
-    latestReleaseTag: 'v3.4.27',
-    releaseFrequencyPerYear: 18,
-    weeklyCommits: [12, 18, 14, 22, 9, 16, 20, 11, 25, 18, 14, 8, 21, 17, 23, 15, 12, 19, 28, 13, 16, 22, 10, 18, 24, 15, 17, 20, 14, 11, 26, 19, 16, 13, 21, 18, 15, 22, 8, 17, 24, 12, 19, 16, 14, 23, 18, 11, 20, 15, 17, 14].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
-    contributorsCount: 485,
-    license: 'MIT',
-    starsHistory: [500, 500, 500, 800, 300, 400, 300, 200, 100, 50, 30, 20].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    commitsHistory: [850, 920, 880, 910, 950, 1000, 980, 1050, 1100, 1080, 1120, 1150].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    issuesHistory: [10, 10, 5, 5, 5, 3, 2, 2, -2, -2, -2, -2].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    prHistory: [3, 3, 2, 2, 3, 3, 2, -1, -1, -1, 1, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
-  },
-  {
-    id: 'microsoft-vscode',
-    url: 'https://github.com/microsoft/vscode',
-    name: 'vscode',
-    owner: 'microsoft',
-    description: 'Visual Studio Code is a code editor redefined and optimized for building modern apps.',
-    createdAt: '2015-09-03T00:00:00Z',
-    pushedAt: '2024-05-22T10:15:00Z',
-    size: 652000,
-    languages: { TypeScript: 52000000, JavaScript: 3200000, CSS: 800000, HTML: 200000 },
-    stars: 162000,
-    forks: 28400,
-    watchers: 4200,
-    openIssues: 8950,
-    closedIssues: 180000,
-    avgIssueCloseDays: 45,
-    openPRs: 320,
-    mergedPRs: 22000,
-    closedPRs: 5500,
-    releasesCount: 210,
-    latestReleaseTag: 'v1.89.1',
-    releaseFrequencyPerYear: 12,
-    weeklyCommits: [72, 85, 91, 78, 65, 88, 95, 82, 70, 88, 92, 79, 68, 86, 90, 76, 83, 91, 74, 87, 93, 80, 71, 89, 84, 77, 92, 88, 75, 82, 90, 73, 87, 94, 78, 85, 91, 79, 66, 88, 83, 76, 90, 87, 74, 82, 88, 70, 85, 91, 79, 83].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
-    contributorsCount: 2142,
-    license: 'MIT',
-    starsHistory: [1000, 1000, 1000, 500, 300, 400, 300, 200, 100, 100, 50, 50].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    commitsHistory: [2500, 2600, 2700, 2650, 2750, 2800, 2850, 2900, 2950, 3000, 3050, 3100].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    issuesHistory: [100, 100, 100, 100, 50, 50, 20, 20, 20, -10, -5, 5].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    prHistory: [20, 20, 20, 20, 20, 20, 10, 5, 3, 2, 0, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
-  }
+  vueData,
+  angularData
+  // {
+  //   id: 'vuejs-core',
+  //   url: 'https://github.com/vuejs/core',
+  //   name: 'core',
+  //   owner: 'vuejs',
+  //   description: 'Vue.js is a JavaScript framework for building user interfaces.',
+  //   createdAt: '2021-01-16T00:00:00Z',
+  //   pushedAt: '2024-05-20T12:34:00Z',
+  //   size: 28500,
+  //   languages: { TypeScript: 8200000, JavaScript: 420000, HTML: 15000, CSS: 8000 },
+  //   stars: 45200,
+  //   forks: 9800,
+  //   watchers: 1200,
+  //   openIssues: 324,
+  //   closedIssues: 2800,
+  //   avgIssueCloseDays: 12,
+  //   openPRs: 48,
+  //   mergedPRs: 4200,
+  //   closedPRs: 320,
+  //   releasesCount: 82,
+  //   latestReleaseTag: 'v3.4.27',
+  //   releaseFrequencyPerYear: 18,
+  //   weeklyCommits: [12, 18, 14, 22, 9, 16, 20, 11, 25, 18, 14, 8, 21, 17, 23, 15, 12, 19, 28, 13, 16, 22, 10, 18, 24, 15, 17, 20, 14, 11, 26, 19, 16, 13, 21, 18, 15, 22, 8, 17, 24, 12, 19, 16, 14, 23, 18, 11, 20, 15, 17, 14].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
+  //   contributorsCount: 485,
+  //   license: 'MIT',
+  //   starsHistory: [500, 500, 500, 800, 300, 400, 300, 200, 100, 50, 30, 20].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   commitsHistory: [850, 920, 880, 910, 950, 1000, 980, 1050, 1100, 1080, 1120, 1150].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   issuesHistory: [10, 10, 5, 5, 5, 3, 2, 2, -2, -2, -2, -2].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   prHistory: [3, 3, 2, 2, 3, 3, 2, -1, -1, -1, 1, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
+  // },
+  // {
+  //   id: 'microsoft-vscode',
+  //   url: 'https://github.com/microsoft/vscode',
+  //   name: 'vscode',
+  //   owner: 'microsoft',
+  //   description: 'Visual Studio Code is a code editor redefined and optimized for building modern apps.',
+  //   createdAt: '2015-09-03T00:00:00Z',
+  //   pushedAt: '2024-05-22T10:15:00Z',
+  //   size: 652000,
+  //   languages: { TypeScript: 52000000, JavaScript: 3200000, CSS: 800000, HTML: 200000 },
+  //   stars: 162000,
+  //   forks: 28400,
+  //   watchers: 4200,
+  //   openIssues: 8950,
+  //   closedIssues: 180000,
+  //   avgIssueCloseDays: 45,
+  //   openPRs: 320,
+  //   mergedPRs: 22000,
+  //   closedPRs: 5500,
+  //   releasesCount: 210,
+  //   latestReleaseTag: 'v1.89.1',
+  //   releaseFrequencyPerYear: 12,
+  //   weeklyCommits: [72, 85, 91, 78, 65, 88, 95, 82, 70, 88, 92, 79, 68, 86, 90, 76, 83, 91, 74, 87, 93, 80, 71, 89, 84, 77, 92, 88, 75, 82, 90, 73, 87, 94, 78, 85, 91, 79, 66, 88, 83, 76, 90, 87, 74, 82, 88, 70, 85, 91, 79, 83].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
+  //   contributorsCount: 2142,
+  //   license: 'MIT',
+  //   starsHistory: [1000, 1000, 1000, 500, 300, 400, 300, 200, 100, 100, 50, 50].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   commitsHistory: [2500, 2600, 2700, 2650, 2750, 2800, 2850, 2900, 2950, 3000, 3050, 3100].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   issuesHistory: [100, 100, 100, 100, 50, 50, 20, 20, 20, -10, -5, 5].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+  //   prHistory: [20, 20, 20, 20, 20, 20, 10, 5, 3, 2, 0, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
+  // }
 ]
 
 

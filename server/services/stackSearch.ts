@@ -241,19 +241,7 @@ function deriveRules(
 
 // ─── Core function ─────────────────────────────────────────────────────────────
 
-export async function searchStack(language: string, keywords: string[]): Promise<StackSearchResult> {
-  const lang = language.toLowerCase()
-  const allProjects = MOCK_PROJECTS[lang] ?? MOCK_PROJECTS['javascript']!
-
-  // Keyword filter: keep only projects whose dependency list contains a keyword
-  const projects = keywords.length > 0
-    ? Object.fromEntries(
-        Object.entries(allProjects).filter(([, deps]) =>
-          keywords.some(kw => deps.some(d => d.toLowerCase().includes(kw.toLowerCase())))
-        )
-      )
-    : allProjects
-
+export async function analyzeProjects(language: string, keywords: string[], projects: Record<string, string[]>): Promise<StackSearchResult> {
   const reposAnalyzed = Object.keys(projects).length
 
   // ── 1. Dependency frequency counts ──────────────────────────────────────────
@@ -384,4 +372,19 @@ export async function searchStack(language: string, keywords: string[]): Promise
   const associationRules = deriveRules(rawItemsets, reposAnalyzed, 0.5).slice(0, 30)
 
   return { language, keywords, reposAnalyzed, dependencies, coOccurrenceMatrix, jaccardMatrix, communities, graphNodes, graphLinks, frequentItemsets, associationRules }
+}
+
+export async function searchStack(language: string, keywords: string[]): Promise<StackSearchResult> {
+  const lang = language.toLowerCase()
+  const allProjects = MOCK_PROJECTS[lang] ?? MOCK_PROJECTS['javascript']!
+
+  const projects = keywords.length > 0
+    ? Object.fromEntries(
+        Object.entries(allProjects).filter(([, deps]) =>
+          keywords.some(kw => deps.some(d => d.toLowerCase().includes(kw.toLowerCase())))
+        )
+      )
+    : allProjects
+
+  return analyzeProjects(language, keywords, projects)
 }

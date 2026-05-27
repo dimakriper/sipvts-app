@@ -33,6 +33,7 @@ const props = defineProps<{
   repositories: Repository[]
   metricKey: 'starsHistory' | 'commitsHistory' | 'issuesHistory' | 'prHistory'
   type: 'line' | 'bar'
+  delta?: boolean
 }>()
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -95,10 +96,17 @@ function initializeChart() {
   // Each dataset aligned to the shared label array (null for missing months)
   const datasets = props.repositories.map((repo, idx) => {
     const raw = getMetricData(repo)
-    const data = uniqueTs.map(ts => {
+    const aligned = uniqueTs.map(ts => {
       const point = raw.find(p => p.t === ts)
       return point !== undefined ? point.v : null
     })
+    // When delta=true, show month-over-month change; first point becomes null
+    const data = props.delta
+      ? aligned.map((v, i) => {
+          if (i === 0 || v === null || aligned[i - 1] === null) return null
+          return v - (aligned[i - 1] as number)
+        })
+      : aligned
     const baseConfig = {
       label: `${repo.owner}/${repo.name}`,
       data,

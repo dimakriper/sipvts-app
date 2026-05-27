@@ -69,7 +69,7 @@ export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
 
 export const useStackStore = defineStore('stack', () => {
   const language = ref<string>('')
-  const keywords = ref<string>('')
+  const query = ref<string>('')
   const result = ref<StackSearchResult | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -90,8 +90,8 @@ export const useStackStore = defineStore('stack', () => {
     selectedDep.value = null
     try {
       const params = new URLSearchParams({ language: language.value })
-      const kw = keywords.value.trim()
-      if (kw) params.set('keywords', kw)
+      const q = query.value.trim()
+      if (q) params.set('keywords', q)
       result.value = await $fetch<StackSearchResult>(`/api/stack/search?${params.toString()}`)
       activeCommunities.value = new Set(result.value.communities.map(c => c.id))
     } catch (e) {
@@ -103,7 +103,7 @@ export const useStackStore = defineStore('stack', () => {
 
   function reset() {
     language.value = ''
-    keywords.value = ''
+    query.value = ''
     result.value = null
     error.value = null
     selectedDep.value = null
@@ -123,7 +123,7 @@ export const useStackStore = defineStore('stack', () => {
 
   return {
     language,
-    keywords,
+    query,
     result,
     loading,
     error,

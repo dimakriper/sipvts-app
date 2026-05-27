@@ -29,10 +29,10 @@
           </div>
           <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">
-              Ключевые слова (через запятую)
+              Поисковый запрос
             </label>
             <input
-              v-model="store.keywords"
+              v-model="store.query"
               type="text"
               placeholder="api, rest, async..."
               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"

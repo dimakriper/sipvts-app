@@ -35,7 +35,7 @@
             <input
               v-model="newRepoUrl"
               type="text"
-              placeholder="Введите URL репозитория GitHub (например, https://github.com/owner/repo)"
+              placeholder="https://github.com/owner/repo или owner/repo"
               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               @keyup.enter="addRepository"
             >
@@ -117,12 +117,16 @@ onMounted(async () => {
 })
 
 function validateUrl(url: string): boolean {
-  const githubUrlPattern = /^https:\/\/github\.com\/[\w-]+\/[\w-]+\/?$/
-  return githubUrlPattern.test(url.trim())
+  const trimmed = url.trim()
+  const fullUrl = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/
+  const shortForm = /^[\w.-]+\/[\w.-]+$/
+  return fullUrl.test(trimmed) || shortForm.test(trimmed)
 }
 
 function extractRepoInfo(url: string): { owner: string, repo: string } | null {
-  const match = url.trim().match(/github\.com\/([\w-]+)\/([\w-]+)/)
+  const trimmed = url.trim()
+  // Try full URL first, then short owner/repo form
+  const match = trimmed.match(/github\.com\/([\w.-]+)\/([\w.-]+)/) ?? trimmed.match(/^([\w.-]+)\/([\w.-]+)$/)
   const owner = match?.[1]
   const repo = match?.[2]
 
@@ -142,7 +146,7 @@ async function addRepository() {
   }
 
   if (!validateUrl(newRepoUrl.value)) {
-    store.setError('Invalid GitHub URL. Please use format: https://github.com/owner/repo')
+    store.setError('Invalid input. Use https://github.com/owner/repo or owner/repo')
     return
   }
 
@@ -155,8 +159,7 @@ async function addRepository() {
   try {
     store.isLoading = true
     const newRepo = await $fetch('/api/analytics/repository', {
-      method: 'POST',
-      body: { owner: repoInfo.owner, repo: repoInfo.repo }
+      query: { owner: repoInfo.owner, repo: repoInfo.repo }
     })
     const success = store.addRepository(newRepo)
     if (success) {
@@ -169,15 +172,7 @@ async function addRepository() {
   }
 }
 
-async function removeRepository(repoId: string) {
-  try {
-    await $fetch('/api/analytics/repository', {
-      method: 'DELETE',
-      query: { id: repoId }
-    })
-  } catch {
-    // Ignore delete errors — remove from local store regardless
-  }
+function removeRepository(repoId: string) {
   store.removeRepository(repoId)
 }
 </script>

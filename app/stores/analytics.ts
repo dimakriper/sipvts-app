@@ -116,15 +116,6 @@ export const useAnalyticsStore = defineStore(
       totalStars,
       averageForks,
     }
-  },
-  {
-    persist: [
-      {
-        key: 'analytics-store-v3',
-        storage: typeof window !== 'undefined' ? localStorage : undefined,
-        pick: ['repositories']
-      }
-    ]
   }
 )
 

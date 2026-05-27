@@ -17,8 +17,8 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    mongodbUri: '',
-    mongodbDb: 'sipvts'
+    // Set via NUXT_GITHUB_TOKEN environment variable
+    githubToken: ''
   },
 
   compatibilityDate: '2025-01-15',

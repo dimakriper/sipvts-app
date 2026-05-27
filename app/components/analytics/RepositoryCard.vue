@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ">
+  <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ">
     <!-- Remove button -->
     <button
       @click="$emit('remove', repository.id)"
@@ -184,6 +184,7 @@
           :repositories="[repository]"
           metric-key="commitsHistory"
           type="bar"
+          :delta="true"
         />
         <AnalyticsMetricsChart
           title="Рост задач"

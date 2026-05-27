@@ -16,10 +16,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const keywords = keywordsRaw
-    .split(',')
-    .map(k => k.trim())
-    .filter(Boolean)
+  const keywords = keywordsRaw ? [keywordsRaw] : []
 
   return await searchStack(language, keywords)
 })

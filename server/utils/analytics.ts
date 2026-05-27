@@ -1,5 +1,3 @@
-import type { Collection } from 'mongodb'
-
 export type DataPoint = { t: number, v: number }
 export interface Repository {
   id: string
@@ -37,21 +35,6 @@ export interface Repository {
   prHistory: DataPoint[]
 }
 
-export type StoredRepository = Repository & { _id: string, fetchedAt?: Date }
-
-export async function getReposCollection(): Promise<Collection<StoredRepository>> {
-  const db = await getDb()
-  return db.collection<StoredRepository>('repositories')
-}
-
-/** Strip MongoDB internal fields before sending to the client */
-export function toRepository(doc: StoredRepository): Repository {
-  const { _id, fetchedAt, ...repo } = doc
-  void _id
-  void fetchedAt
-  return repo as Repository
-}
-
 function generateWeeklyHistory(avgCommits: number, anchorMs: number): DataPoint[] {
   const WEEK_MS = 7 * 24 * 60 * 60 * 1000
   const anchor = new Date(anchorMs)
@@ -69,18 +52,18 @@ function generateTimestampedHistory(
   baseValue: number,
   anchorMs: number,
   count: number = 12,
-  volatility: number = 0.2
+  volatility: number = 0.4
 ): DataPoint[] {
+  // Each point is a monthly increment (delta), not a cumulative total.
+  const monthlyBase = Math.max(1, Math.round(baseValue / count))
   const result: DataPoint[] = []
-  let current = baseValue * 0.5
   for (let i = count - 1; i >= 0; i--) {
     const d = new Date(anchorMs)
     d.setUTCMonth(d.getUTCMonth() - i)
     d.setUTCDate(1)
     d.setUTCHours(0, 0, 0, 0)
-    const change = (Math.random() - 0.5) * volatility * current
-    current = Math.max(0, current + change)
-    result.push({ t: d.getTime(), v: Math.round(current) })
+    const noise = (Math.random() - 0.5) * 2 * volatility * monthlyBase
+    result.push({ t: d.getTime(), v: Math.max(0, Math.round(monthlyBase + noise)) })
   }
   return result
 }
@@ -173,10 +156,10 @@ export const seedData: Repository[] = [
     weeklyCommits: [12, 18, 14, 22, 9, 16, 20, 11, 25, 18, 14, 8, 21, 17, 23, 15, 12, 19, 28, 13, 16, 22, 10, 18, 24, 15, 17, 20, 14, 11, 26, 19, 16, 13, 21, 18, 15, 22, 8, 17, 24, 12, 19, 16, 14, 23, 18, 11, 20, 15, 17, 14].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
     contributorsCount: 485,
     license: 'MIT',
-    starsHistory: [42000, 42500, 43000, 43800, 44100, 44500, 44800, 45000, 45100, 45150, 45180, 45200].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+    starsHistory: [500, 500, 500, 800, 300, 400, 300, 200, 100, 50, 30, 20].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
     commitsHistory: [850, 920, 880, 910, 950, 1000, 980, 1050, 1100, 1080, 1120, 1150].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    issuesHistory: [300, 310, 315, 320, 325, 328, 330, 332, 330, 328, 326, 324].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    prHistory: [35, 38, 40, 42, 45, 48, 50, 49, 48, 47, 48, 48].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
+    issuesHistory: [10, 10, 5, 5, 5, 3, 2, 2, -2, -2, -2, -2].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+    prHistory: [3, 3, 2, 2, 3, 3, 2, -1, -1, -1, 1, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
   },
   {
     id: 'microsoft-vscode',
@@ -203,19 +186,11 @@ export const seedData: Repository[] = [
     weeklyCommits: [72, 85, 91, 78, 65, 88, 95, 82, 70, 88, 92, 79, 68, 86, 90, 76, 83, 91, 74, 87, 93, 80, 71, 89, 84, 77, 92, 88, 75, 82, 90, 73, 87, 94, 78, 85, 91, 79, 66, 88, 83, 76, 90, 87, 74, 82, 88, 70, 85, 91, 79, 83].map((v, i) => ({ t: Date.UTC(2024, 4, 20) - (51 - i) * 7 * 24 * 60 * 60 * 1000, v })),
     contributorsCount: 2142,
     license: 'MIT',
-    starsHistory: [158000, 159000, 160000, 160500, 160800, 161200, 161500, 161700, 161800, 161900, 161950, 162000].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+    starsHistory: [1000, 1000, 1000, 500, 300, 400, 300, 200, 100, 100, 50, 50].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
     commitsHistory: [2500, 2600, 2700, 2650, 2750, 2800, 2850, 2900, 2950, 3000, 3050, 3100].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    issuesHistory: [8500, 8600, 8700, 8800, 8850, 8900, 8920, 8940, 8960, 8950, 8945, 8950].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
-    prHistory: [200, 220, 240, 260, 280, 300, 310, 315, 318, 320, 320, 320].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
+    issuesHistory: [100, 100, 100, 100, 50, 50, 20, 20, 20, -10, -5, 5].map((v, i) => ({ t: Date.UTC(2023, i, 1), v })),
+    prHistory: [20, 20, 20, 20, 20, 20, 10, 5, 3, 2, 0, 0].map((v, i) => ({ t: Date.UTC(2023, i, 1), v }))
   }
 ]
 
-/** Insert seed data when the collection is empty */
-export async function seedIfEmpty(): Promise<void> {
-  const col = await getReposCollection()
-  const count = await col.countDocuments()
-  if (count === 0) {
-    const now = new Date()
-    await col.insertMany(seedData.map(r => ({ _id: r.id, ...r, fetchedAt: now })))
-  }
-}
+

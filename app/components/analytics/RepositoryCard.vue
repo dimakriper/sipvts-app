@@ -279,17 +279,20 @@ function getLanguageColor(language: string): string {
   return languageColors[language] ?? '#858585'
 }
 
-function formatNumber(num: number): string {
+function formatNumber(num: number | undefined | null): string {
+  if (num == null || isNaN(num)) return '—'
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
   return num.toString()
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | undefined | null): string {
+  if (!iso) return '—'
   return new Date(iso).toLocaleDateString('ru-RU', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function formatSize(kb: number): string {
+function formatSize(kb: number | undefined | null): string {
+  if (kb == null || isNaN(kb)) return '—'
   if (kb >= 1024 * 1024) return (kb / 1024 / 1024).toFixed(1) + ' ГБ'
   if (kb >= 1024) return (kb / 1024).toFixed(1) + ' МБ'
   return kb + ' КБ'

@@ -42,6 +42,7 @@ export const useAnalyticsStore = defineStore(
   'analytics',
   () => {
     const repositories = ref<Repository[]>([])
+    const archivedRepos = ref<Repository[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
@@ -54,7 +55,12 @@ export const useAnalyticsStore = defineStore(
 
     // Add repository
     const addRepository = (repo: Repository) => {
-      // Check if already exists
+      // Restore from archive if it was archived
+      const archivedIdx = archivedRepos.value.findIndex(r => r.id === repo.id)
+      if (archivedIdx !== -1) {
+        archivedRepos.value.splice(archivedIdx, 1)
+      }
+      // Check if already active
       if (repositories.value.some((r) => r.id === repo.id)) {
         error.value = 'This repository is already in the list'
         return false
@@ -65,14 +71,38 @@ export const useAnalyticsStore = defineStore(
       return true
     }
 
-    // Remove repository
+    // Soft-remove: move to archive
     const removeRepository = (repoId: string) => {
-      repositories.value = repositories.value.filter((r) => r.id !== repoId)
+      const repo = repositories.value.find(r => r.id === repoId)
+      if (repo) {
+        archivedRepos.value.unshift(repo)
+        repositories.value = repositories.value.filter(r => r.id !== repoId)
+      }
     }
 
-    // Clear all repositories
+    // Restore from archive
+    const restoreRepository = (repoId: string) => {
+      const repo = archivedRepos.value.find(r => r.id === repoId)
+      if (repo) {
+        archivedRepos.value = archivedRepos.value.filter(r => r.id !== repoId)
+        repositories.value.push(repo)
+      }
+    }
+
+    // Hard-delete from archive
+    const permanentlyDelete = (repoId: string) => {
+      archivedRepos.value = archivedRepos.value.filter(r => r.id !== repoId)
+    }
+
+    // Clear archive only
+    const clearArchive = () => {
+      archivedRepos.value = []
+    }
+
+    // Clear all (active + archive)
     const clearRepositories = () => {
       repositories.value = []
+      archivedRepos.value = []
     }
 
     // Update repository
@@ -104,11 +134,15 @@ export const useAnalyticsStore = defineStore(
 
     return {
       repositories,
+      archivedRepos,
       isLoading,
       error,
       initializeStore,
       addRepository,
       removeRepository,
+      restoreRepository,
+      permanentlyDelete,
+      clearArchive,
       clearRepositories,
       updateRepository,
       setError,
@@ -116,7 +150,8 @@ export const useAnalyticsStore = defineStore(
       totalStars,
       averageForks,
     }
-  }
+  },
+  { persist: { pick: ['repositories', 'archivedRepos'] } }
 )
 
 function generateWeeklyHistory(avgCommits: number, anchorMs: number): DataPoint[] {

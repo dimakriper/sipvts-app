@@ -251,7 +251,21 @@ export async function analyzeProjects(language: string, keywords: string[], proj
       countMap[dep] = (countMap[dep] ?? 0) + 1
     }
   }
-  const allDeps = Object.keys(countMap)
+
+  // ── Cap to top-70 deps by frequency to keep matrices and FP-Growth bounded ──
+  const MAX_DEPS = 70
+  const allDepsRaw = Object.keys(countMap)
+  const allDeps = allDepsRaw.length > MAX_DEPS
+    ? allDepsRaw.sort((a, b) => countMap[b]! - countMap[a]!).slice(0, MAX_DEPS)
+    : allDepsRaw
+  const allowedSet = new Set(allDeps)
+
+  // Re-filter projects to only allowed deps (keeps transactions small for FP-Growth)
+  const filteredProjects: Record<string, string[]> = {}
+  for (const [name, deps] of Object.entries(projects)) {
+    const filtered = deps.filter(d => allowedSet.has(d))
+    if (filtered.length > 0) filteredProjects[name] = filtered
+  }
 
   // ── 2. Co-occurrence matrix ──────────────────────────────────────────────────
   // coOccurrenceMatrix[A][A] = count(A); coOccurrenceMatrix[A][B] = projects containing both
@@ -262,7 +276,7 @@ export async function analyzeProjects(language: string, keywords: string[], proj
       coOccurrenceMatrix[dep]![dep2] = dep === dep2 ? countMap[dep]! : 0
     }
   }
-  for (const projectDeps of Object.values(projects)) {
+  for (const projectDeps of Object.values(filteredProjects)) {
     for (let i = 0; i < projectDeps.length; i++) {
       for (let j = i + 1; j < projectDeps.length; j++) {
         const a = projectDeps[i]!
@@ -353,9 +367,9 @@ export async function analyzeProjects(language: string, keywords: string[], proj
   })
 
   // ── 8. Frequent itemsets + association rules (FP-Growth) ────────────────────
-  const transactions = Object.values(projects)
-  // minSupport = at least 2 projects or 15%, whichever is smaller threshold gives more results
-  const minSup = Math.max(2 / reposAnalyzed, 0.15)
+  const transactions = Object.values(filteredProjects)
+  // Raise minSupport to limit FP-Growth memory: at least 15% or 3 projects
+  const minSup = Math.max(3 / reposAnalyzed, 0.20)
   const rawItemsets: Array<{ items: string[], support: number }>
     = await new FPGrowth<string>(minSup).exec(transactions)
 

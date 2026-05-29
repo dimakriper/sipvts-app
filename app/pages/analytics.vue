@@ -27,9 +27,79 @@
       <ClientOnly>
         <!-- Repository Input Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Добавить репозиторий
-          </h2>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+              Добавить репозиторий
+            </h2>
+            <div class="flex items-center gap-3">
+              <button
+                v-if="store.archivedRepos.length > 0"
+                class="flex items-center gap-1.5 text-sm font-medium transition-colors"
+                :class="
+                  archiveOpen
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400'
+                "
+                @click="archiveOpen = !archiveOpen"
+              >
+                История
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-xs font-bold">
+                  {{ store.archivedRepos.length }}
+                </span>
+                <span class="text-xs opacity-60">{{ archiveOpen ? '▴' : '▾' }}</span>
+              </button>
+              <button
+                v-if="store.repositories.length > 0 || store.archivedRepos.length > 0"
+                class="text-sm text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                @click="store.clearRepositories()"
+              >
+                Очистить всё
+              </button>
+            </div>
+          </div>
+
+          <!-- Archive panel -->
+          <div
+            v-if="archiveOpen && store.archivedRepos.length > 0"
+            class="mb-4 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+          >
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Удалённые репозитории</span>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+              <div
+                v-for="repo in store.archivedRepos"
+                :key="repo.id"
+                class="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-gray-800"
+              >
+                <div class="flex-1 min-w-0">
+                  <span class="text-sm font-mono text-gray-700 dark:text-gray-300 truncate block">
+                    {{ repo.owner }}/{{ repo.name }}
+                  </span>
+                </div>
+                <button
+                  class="shrink-0 px-3 py-1 text-xs font-medium border border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  @click="store.restoreRepository(repo.id)"
+                >
+                  Восстановить
+                </button>
+                <button
+                  class="shrink-0 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-xs"
+                  @click="store.permanentlyDelete(repo.id)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                @click="store.clearArchive()"
+              >
+                Очистить архив
+              </button>
+            </div>
+          </div>
 
           <div class="flex gap-2 mb-4">
             <input
@@ -102,6 +172,7 @@ import type { Repository } from '../stores/analytics'
 
 const store = useAnalyticsStore()
 const newRepoUrl = ref('')
+const archiveOpen = ref(false)
 
 onMounted(async () => {
   try {

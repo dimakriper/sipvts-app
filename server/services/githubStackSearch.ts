@@ -2,8 +2,9 @@ import { analyzeProjects } from './stackSearch'
 import type { StackSearchResult } from './stackSearch'
 
 const GITHUB_API = 'https://api.github.com'
-const REPOS_TO_FETCH = 40
-const FETCH_CHUNK = 8 // parallel manifest requests per batch
+const REPOS_TO_FETCH = 30
+const FETCH_CHUNK = 6 // parallel manifest requests per batch
+const MAX_DEPS_PER_PROJECT = 40 // cap per manifest to avoid noise packages
 
 // Map service language names → GitHub language filter values
 const GITHUB_LANGUAGE_MAP: Record<string, string> = {
@@ -140,12 +141,10 @@ export async function searchStackFromGitHub(
       const result = results[j]
       const name = chunk[j]!
       if (result?.status === 'fulfilled' && result.value && result.value.length > 0) {
-        projects[name] = result.value
+        projects[name] = result.value.slice(0, MAX_DEPS_PER_PROJECT)
       }
     }
   }
-  console.log(projects)
-
   if (Object.keys(projects).length === 0) {
     throw new Error('No repositories with parseable manifests found on GitHub')
   }

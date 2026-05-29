@@ -53,6 +53,20 @@
           >
             Сбросить
           </button>
+          <button
+            v-if="store.history.length > 0"
+            class="px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+            :class="
+              historyOpen
+                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            "
+            @click="historyOpen = !historyOpen"
+          >
+            История
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold">{{ store.history.length }}</span>
+            <span class="text-xs opacity-60">{{ historyOpen ? '▴' : '▾' }}</span>
+          </button>
         </div>
         <p
           v-if="store.error"
@@ -60,6 +74,58 @@
         >
           {{ store.error }}
         </p>
+      </div>
+    </div>
+
+    <!-- ── History panel ── -->
+    <div
+      v-if="historyOpen && store.history.length > 0"
+      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="divide-y divide-gray-100 dark:divide-gray-700 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div
+            v-for="entry in store.history"
+            :key="entry.id"
+            class="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+            :class="
+              store.result === entry.result
+                ? 'bg-indigo-50 dark:bg-indigo-900/20'
+                : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            "
+            @click="store.loadFromHistory(entry); historyOpen = false"
+          >
+            <span
+              class="shrink-0 px-2 py-0.5 rounded text-xs font-semibold text-white"
+              :class="entry.language === 'Python' ? 'bg-yellow-500' : 'bg-blue-500'"
+            >
+              {{ entry.language }}
+            </span>
+            <span class="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">
+              {{ entry.keywords || '(без фильтра)' }}
+            </span>
+            <span class="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+              {{ entry.result.reposAnalyzed }} репоз.
+            </span>
+            <span class="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+              {{ formatHistoryDate(entry.timestamp) }}
+            </span>
+            <button
+              class="shrink-0 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-xs"
+              @click.stop="store.deleteHistoryEntry(entry.id)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div class="flex justify-end mt-3">
+          <button
+            class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            @click="store.clearHistory(); store.reset(); historyOpen = false"
+          >
+            Очистить всё
+          </button>
+        </div>
       </div>
     </div>
 
@@ -404,10 +470,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStackStore, SUPPORTED_LANGUAGES } from '../stores/stack'
 
 const store = useStackStore()
+const historyOpen = ref(false)
+
+onMounted(() => {
+  if (!store.result) {
+    if (store.history.length > 0) {
+      store.loadFromHistory(store.history[0]!)
+    } else {
+      store.loadDefaultData()
+    }
+  }
+})
+
+function formatHistoryDate(ts: number): string {
+  const d = new Date(ts)
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' +
+    d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
 
 function setActiveTab(id: string) {
   store.activeTab = id as typeof store.activeTab

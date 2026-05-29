@@ -149,10 +149,21 @@
               </ul>
             </div>
             <button
-              class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shrink-0"
+              class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shrink-0 flex items-center gap-2"
+              :disabled="store.isLoading"
               @click="addRepository"
             >
-              Добавить
+              <svg
+                v-if="store.isLoading"
+                class="animate-spin w-4 h-4 shrink-0"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              {{ store.isLoading ? 'Загрузка...' : 'Добавить' }}
             </button>
           </div>
 
@@ -183,9 +194,28 @@
           </div>
         </div>
 
+        <!-- Loading indicator -->
+        <div
+          v-if="store.isLoading"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center"
+        >
+          <svg
+            class="animate-spin w-10 h-10 mx-auto mb-4 text-indigo-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400">
+            Загружаем данные репозитория…
+          </p>
+        </div>
+
         <!-- Empty State -->
         <div
-          v-if="store.repositories.length === 0"
+          v-else-if="store.repositories.length === 0"
           class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center"
         >
           <div class="text-6xl mb-4">
@@ -204,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { $fetch } from 'ofetch'
 import { useAnalyticsStore } from '../stores/analytics'
 import type { Repository } from '../stores/analytics'
@@ -271,19 +301,6 @@ function onRepoBlur() {
     repoSuggestOpen.value = false
   }, 150)
 }
-
-onMounted(async () => {
-  try {
-    const defaults = await $fetch<Repository[]>('/api/analytics/repositories')
-    for (const repo of defaults) {
-      if (!store.repositories.some(r => r.id === repo.id)) {
-        store.addRepository(repo)
-      }
-    }
-  } catch {
-    // API unavailable
-  }
-})
 
 function validateUrl(url: string): boolean {
   const trimmed = url.trim()

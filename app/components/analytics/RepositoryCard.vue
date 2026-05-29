@@ -184,7 +184,6 @@
           :repositories="[repository]"
           metric-key="commitsHistory"
           type="bar"
-          :delta="true"
         />
         <AnalyticsMetricsChart
           title="Рост задач"

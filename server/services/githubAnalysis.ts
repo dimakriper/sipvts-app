@@ -77,7 +77,17 @@ async function getReleasesInfo(
   const data = await res.json() as Array<{ tag_name: string }>
   const link = res.headers.get('Link') ?? ''
   const lastMatch = link.match(/[?&]page=(\d+)>; rel="last"/)
-  const count = lastMatch ? (parseInt(lastMatch[1]!, 10) - 1) * 100 + data.length : data.length
+  if (!lastMatch) {
+    return { count: data.length, latestTag: data[0]?.tag_name ?? '' }
+  }
+  const lastPage = parseInt(lastMatch[1]!, 10)
+  // Fetch the last page to get exact remainder count
+  const lastRes = await fetch(
+    `${GITHUB_API}/repos/${owner}/${repo}/releases?per_page=100&page=${lastPage}`,
+    { headers }
+  )
+  const lastData = lastRes.ok ? await lastRes.json() as Array<{ tag_name: string }> : []
+  const count = (lastPage - 1) * 100 + lastData.length
   return { count, latestTag: data[0]?.tag_name ?? '' }
 }
 
@@ -105,10 +115,37 @@ async function getAvgIssueCloseDays(
   return Math.round(totalDays / realIssues.length)
 }
 
-/** Build approximate monthly history (12 points) as increments (delta per period) */
-function buildApproxHistory(currentValue: number, monthsBack: number = 12): DataPoint[] {
+/**
+ * Build cumulative history (e.g. total stars over last 12 months).
+ * Grows from ~60-75% of currentValue up to currentValue.
+ */
+function buildCumulativeHistory(currentValue: number, monthsBack: number = 12): DataPoint[] {
   const now = Date.now()
-  const monthlyBase = Math.max(1, Math.round(currentValue / monthsBack))
+  const startFraction = 0.6 + Math.random() * 0.15
+  const startValue = Math.round(currentValue * startFraction)
+  const gap = currentValue - startValue
+  const result: DataPoint[] = []
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now)
+    d.setUTCMonth(d.getUTCMonth() - i)
+    d.setUTCDate(1)
+    d.setUTCHours(0, 0, 0, 0)
+    const progress = (monthsBack - i) / monthsBack
+    const noise = (Math.random() - 0.4) * 0.05 * gap
+    const v = Math.min(currentValue, Math.max(0, Math.round(startValue + gap * progress + noise)))
+    result.push({ t: d.getTime(), v })
+  }
+  if (result.length > 0) result[result.length - 1]!.v = currentValue
+  return result
+}
+
+/**
+ * Build approximate monthly-increment history over last 12 months.
+ * Uses lifetime average rate (totalValue / lifetimeMonths) so values are not inflated.
+ */
+function buildIncrementalHistory(totalValue: number, lifetimeMonths: number, monthsBack: number = 12): DataPoint[] {
+  const now = Date.now()
+  const monthlyBase = Math.max(0, Math.round(totalValue / Math.max(lifetimeMonths, monthsBack)))
   const result: DataPoint[] = []
   for (let i = monthsBack - 1; i >= 0; i--) {
     const d = new Date(now)
@@ -136,6 +173,7 @@ export async function fetchFromGitHub(owner: string, repo: string): Promise<Repo
     size: number
     stargazers_count: number
     forks_count: number
+    subscribers_count: number
     watchers_count: number
     open_issues_count: number
     license: { spdx_id: string } | null
@@ -180,7 +218,7 @@ export async function fetchFromGitHub(owner: string, repo: string): Promise<Repo
 
   // Aggregate weekly commits into monthly buckets for the chart
   const commitsHistory: DataPoint[] = (() => {
-    if (weeklyCommits.length === 0) return buildApproxHistory(0)
+    if (weeklyCommits.length === 0) return buildIncrementalHistory(0, 12, 12)
     const monthMap = new Map<number, number>()
     for (const { t, v } of weeklyCommits) {
       const d = new Date(t)
@@ -196,6 +234,7 @@ export async function fetchFromGitHub(owner: string, repo: string): Promise<Repo
   })()
 
   const ageYears = (Date.now() - new Date(ghRepo.created_at).getTime()) / (365.25 * 86400000)
+  const ageMonths = Math.max(1, Math.round(ageYears * 12))
   const releaseFrequencyPerYear = ageYears > 0 ? Math.round(releasesCount / ageYears) : 0
 
   return {
@@ -210,7 +249,7 @@ export async function fetchFromGitHub(owner: string, repo: string): Promise<Repo
     languages,
     stars: ghRepo.stargazers_count,
     forks: ghRepo.forks_count,
-    watchers: ghRepo.watchers_count,
+    watchers: ghRepo.subscribers_count,
     openIssues,
     closedIssues,
     avgIssueCloseDays,
@@ -224,10 +263,10 @@ export async function fetchFromGitHub(owner: string, repo: string): Promise<Repo
     contributorsCount,
     license: ghRepo.license?.spdx_id ?? 'None',
     // GitHub has no bulk history endpoints for stars/issues/PRs;
-    // these are approximated from current values with a realistic growth curve.
-    starsHistory: buildApproxHistory(ghRepo.stargazers_count),
+    // stars use a cumulative approximation; issues/PRs use lifetime average rate.
+    starsHistory: buildCumulativeHistory(ghRepo.stargazers_count),
     commitsHistory,
-    issuesHistory: buildApproxHistory(openIssues + closedIssues),
-    prHistory: buildApproxHistory(openPRs + mergedPRs + closedPRs)
+    issuesHistory: buildIncrementalHistory(openIssues + closedIssues, ageMonths),
+    prHistory: buildIncrementalHistory(openPRs + mergedPRs + closedPRs, ageMonths)
   }
 }

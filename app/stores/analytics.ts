@@ -167,22 +167,38 @@ function generateWeeklyHistory(avgCommits: number, anchorMs: number): DataPoint[
   }))
 }
 
-function generateTimestampedHistory(
-  baseValue: number,
-  anchorMs: number,
-  count: number = 12,
-  volatility: number = 0.2
-): DataPoint[] {
+/** Cumulative history: value grows from ~65% of currentValue up to currentValue over `count` months. */
+function generateCumulativeHistory(currentValue: number, count: number = 12): DataPoint[] {
+  const now = Date.now()
+  const startFraction = 0.65 + Math.random() * 0.1
+  const startValue = Math.round(currentValue * startFraction)
+  const gap = currentValue - startValue
   const result: DataPoint[] = []
-  let current = baseValue * 0.5
   for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(anchorMs)
+    const d = new Date(now)
     d.setUTCMonth(d.getUTCMonth() - i)
     d.setUTCDate(1)
     d.setUTCHours(0, 0, 0, 0)
-    const change = (Math.random() - 0.5) * volatility * current
-    current = Math.max(0, current + change)
-    result.push({ t: d.getTime(), v: Math.round(current) })
+    const progress = (count - i) / count
+    const noise = (Math.random() - 0.4) * 0.05 * gap
+    const v = Math.min(currentValue, Math.max(0, Math.round(startValue + gap * progress + noise)))
+    result.push({ t: d.getTime(), v })
+  }
+  if (result.length > 0) result[result.length - 1]!.v = currentValue
+  return result
+}
+
+/** Per-month increment history based on a given monthly average. */
+function generateIncrementalHistory(monthlyBase: number, count: number = 12, volatility: number = 0.4): DataPoint[] {
+  const now = Date.now()
+  const result: DataPoint[] = []
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now)
+    d.setUTCMonth(d.getUTCMonth() - i)
+    d.setUTCDate(1)
+    d.setUTCHours(0, 0, 0, 0)
+    const noise = (Math.random() - 0.5) * volatility * monthlyBase
+    result.push({ t: d.getTime(), v: Math.max(0, Math.round(monthlyBase + noise)) })
   }
   return result
 }
@@ -241,10 +257,18 @@ export function generateMockRepo(owner: string, name: string): Repository {
     releaseFrequencyPerYear,
     weeklyCommits: generateWeeklyHistory(avgWeeklyCommits, new Date(pushedAt).getTime()),    contributorsCount: Math.floor(Math.random() * 500) + 20,
     license,
-    starsHistory: generateTimestampedHistory(stars, new Date(pushedAt).getTime(), 12),
-    commitsHistory: generateTimestampedHistory(totalCommits, new Date(pushedAt).getTime(), 12, 0.3),
-    issuesHistory: generateTimestampedHistory(openIssues, new Date(pushedAt).getTime(), 12, 0.4),
-    prHistory: generateTimestampedHistory(openPRs + mergedPRs, new Date(pushedAt).getTime(), 12, 0.5),
+    // starsHistory: cumulative total stars growing to current value
+    starsHistory: generateCumulativeHistory(stars),
+    // commitsHistory: per-month commit sums (avg weekly * 4 weeks, with noise)
+    commitsHistory: generateIncrementalHistory(Math.max(1, avgWeeklyCommits * 4), 12, 0.5),
+    // issuesHistory: per-month new issues based on lifetime average rate
+    issuesHistory: generateIncrementalHistory(
+      Math.max(1, Math.round((openIssues + closedIssues) / Math.max(1, ageYears * 12))), 12, 0.6
+    ),
+    // prHistory: per-month PRs based on lifetime average rate
+    prHistory: generateIncrementalHistory(
+      Math.max(1, Math.round((openPRs + mergedPRs + closedPRs) / Math.max(1, ageYears * 12))), 12, 0.6
+    ),
   }
 }
 

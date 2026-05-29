@@ -97,7 +97,7 @@ const props = defineProps<{
 }>()
 
 const threshold = ref(0.15)
-const showLabels = ref(false)
+const showLabels = ref(true)
 
 // Sort by descending count so the most popular dependencies come first
 const names = computed(() =>

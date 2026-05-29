@@ -31,13 +31,44 @@
             <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">
               Поисковый запрос
             </label>
-            <input
-              v-model="store.query"
-              type="text"
-              placeholder="api, rest, async..."
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              @keyup.enter="store.search"
-            >
+            <div class="relative">
+              <input
+                v-model="store.query"
+                type="text"
+                placeholder="api, rest, async..."
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autocomplete="off"
+                @focus="querySuggestOpen = true"
+                @blur="onQueryBlur"
+                @keydown.down.prevent="querySuggestIdx = Math.min(querySuggestIdx + 1, querySuggestions.length - 1)"
+                @keydown.up.prevent="querySuggestIdx = Math.max(querySuggestIdx - 1, 0)"
+                @keydown.enter.prevent="querySuggestIdx >= 0 && querySuggestions.length > 0 ? applyQuerySuggestion(querySuggestions[querySuggestIdx]) : (querySuggestOpen = false, store.search())"
+                @keydown.escape="querySuggestOpen = false"
+                @input="querySuggestIdx = 0"
+              >
+              <ul
+                v-if="querySuggestOpen && querySuggestions.length > 0"
+                class="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden max-h-64 overflow-y-auto"
+              >
+                <li
+                  v-for="(s, i) in querySuggestions"
+                  :key="s.value"
+                  class="flex items-center gap-2 px-3 py-2 cursor-pointer text-sm transition-colors"
+                  :class="
+                    i === querySuggestIdx
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  "
+                  @mousedown.prevent="applyQuerySuggestion(s)"
+                >
+                  <span
+                    class="text-xs px-1.5 py-0.5 rounded shrink-0"
+                    :class="s.source === 'history' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'"
+                  >{{ s.source === 'history' ? 'ист.' : s.tag }}</span>
+                  <span class="font-mono">{{ s.value }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
           <button
             class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium text-sm transition-colors"
@@ -475,6 +506,78 @@ import { useStackStore, SUPPORTED_LANGUAGES } from '../stores/stack'
 
 const store = useStackStore()
 const historyOpen = ref(false)
+const querySuggestOpen = ref(false)
+const querySuggestIdx = ref(0)
+
+interface QuerySuggestion { value: string, tag: string, source: 'preset' | 'history' }
+
+const PRESET_KEYWORDS: Record<string, QuerySuggestion[]> = {
+  JavaScript: [
+    { value: 'react', tag: 'UI', source: 'preset' },
+    { value: 'vue', tag: 'UI', source: 'preset' },
+    { value: 'angular', tag: 'UI', source: 'preset' },
+    { value: 'next', tag: 'SSR', source: 'preset' },
+    { value: 'nuxt', tag: 'SSR', source: 'preset' },
+    { value: 'svelte', tag: 'UI', source: 'preset' },
+    { value: 'express', tag: 'API', source: 'preset' },
+    { value: 'fastify', tag: 'API', source: 'preset' },
+    { value: 'graphql', tag: 'API', source: 'preset' },
+    { value: 'prisma', tag: 'DB', source: 'preset' },
+    { value: 'mongoose', tag: 'DB', source: 'preset' },
+    { value: 'jest', tag: 'Тест', source: 'preset' },
+    { value: 'vitest', tag: 'Тест', source: 'preset' },
+    { value: 'vite', tag: 'Build', source: 'preset' },
+    { value: 'webpack', tag: 'Build', source: 'preset' },
+    { value: 'tailwindcss', tag: 'CSS', source: 'preset' },
+    { value: 'typescript', tag: 'Lang', source: 'preset' },
+    { value: 'zustand', tag: 'State', source: 'preset' },
+    { value: 'redux', tag: 'State', source: 'preset' },
+    { value: 'zod', tag: 'Valid', source: 'preset' },
+  ],
+  Python: [
+    { value: 'fastapi', tag: 'API', source: 'preset' },
+    { value: 'django', tag: 'Web', source: 'preset' },
+    { value: 'flask', tag: 'Web', source: 'preset' },
+    { value: 'sqlalchemy', tag: 'DB', source: 'preset' },
+    { value: 'pydantic', tag: 'Valid', source: 'preset' },
+    { value: 'celery', tag: 'Worker', source: 'preset' },
+    { value: 'redis', tag: 'Cache', source: 'preset' },
+    { value: 'pytest', tag: 'Тест', source: 'preset' },
+    { value: 'pandas', tag: 'Data', source: 'preset' },
+    { value: 'numpy', tag: 'Data', source: 'preset' },
+    { value: 'torch', tag: 'ML', source: 'preset' },
+    { value: 'tensorflow', tag: 'ML', source: 'preset' },
+    { value: 'scikit-learn', tag: 'ML', source: 'preset' },
+    { value: 'requests', tag: 'HTTP', source: 'preset' },
+    { value: 'httpx', tag: 'HTTP', source: 'preset' },
+    { value: 'boto3', tag: 'AWS', source: 'preset' },
+    { value: 'asyncpg', tag: 'DB', source: 'preset' },
+    { value: 'alembic', tag: 'DB', source: 'preset' },
+  ]
+}
+
+const querySuggestions = computed<QuerySuggestion[]>(() => {
+  const q = store.query.trim().toLowerCase()
+  const lang = store.language || 'JavaScript'
+  const historySuggestions: QuerySuggestion[] = store.history
+    .filter(h => h.keywords && h.language === lang)
+    .map(h => ({ value: h.keywords, tag: 'ист.', source: 'history' as const }))
+    .filter((s, i, arr) => arr.findIndex(x => x.value === s.value) === i)
+  const presets = PRESET_KEYWORDS[lang] ?? PRESET_KEYWORDS['JavaScript']!
+  const all = [...historySuggestions, ...presets]
+  if (!q) return all.slice(0, 10)
+  return all.filter(s => s.value.toLowerCase().includes(q)).slice(0, 10)
+})
+
+function applyQuerySuggestion(s: QuerySuggestion) {
+  store.query = s.value
+  querySuggestOpen.value = false
+  querySuggestIdx.value = 0
+}
+
+function onQueryBlur() {
+  setTimeout(() => { querySuggestOpen.value = false }, 150)
+}
 
 onMounted(() => {
   if (!store.result) {

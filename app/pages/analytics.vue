@@ -102,15 +102,54 @@
           </div>
 
           <div class="flex gap-2 mb-4">
-            <input
-              v-model="newRepoUrl"
-              type="text"
-              placeholder="https://github.com/owner/repo или owner/repo"
-              class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              @keyup.enter="addRepository"
-            >
+            <div class="relative flex-1">
+              <input
+                v-model="newRepoUrl"
+                type="text"
+                placeholder="https://github.com/owner/repo или owner/repo"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autocomplete="off"
+                @focus="repoSuggestOpen = true"
+                @blur="onRepoBlur"
+                @keydown.down.prevent="repoSuggestIdx = Math.min(repoSuggestIdx + 1, repoSuggestions.length - 1)"
+                @keydown.up.prevent="repoSuggestIdx = Math.max(repoSuggestIdx - 1, 0)"
+                @keydown.enter.prevent="repoSuggestIdx >= 0 ? applyRepoSuggestion(repoSuggestions[repoSuggestIdx]) : addRepository()"
+                @keydown.escape="repoSuggestOpen = false"
+                @input="repoSuggestIdx = 0"
+              >
+              <ul
+                v-if="repoSuggestOpen && repoSuggestions.length > 0"
+                class="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden max-h-64 overflow-y-auto"
+              >
+                <li
+                  v-for="(s, i) in repoSuggestions"
+                  :key="s.slug"
+                  class="flex items-center gap-2 px-3 py-2 cursor-pointer text-sm transition-colors"
+                  :class="
+                    i === repoSuggestIdx
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  "
+                  @mousedown.prevent="applyRepoSuggestion(s)"
+                >
+                  <span
+                    v-if="s.source === 'archive'"
+                    class="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
+                  >архив</span>
+                  <span
+                    v-else
+                    class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                  >{{ s.category }}</span>
+                  <span class="font-mono">{{ s.slug }}</span>
+                  <span
+                    v-if="s.description"
+                    class="truncate text-gray-400 dark:text-gray-500 text-xs"
+                  >— {{ s.description }}</span>
+                </li>
+              </ul>
+            </div>
             <button
-              class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+              class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shrink-0"
               @click="addRepository"
             >
               Добавить
@@ -165,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useAnalyticsStore } from '../stores/analytics'
 import type { Repository } from '../stores/analytics'
@@ -173,6 +212,65 @@ import type { Repository } from '../stores/analytics'
 const store = useAnalyticsStore()
 const newRepoUrl = ref('')
 const archiveOpen = ref(false)
+const repoSuggestOpen = ref(false)
+const repoSuggestIdx = ref(0)
+
+interface RepoSuggestion {
+  slug: string
+  category: string
+  description?: string
+  source: 'preset' | 'archive'
+}
+
+const PRESET_REPOS: RepoSuggestion[] = [
+  { slug: 'vuejs/core', category: 'Vue', description: 'Vue 3 core', source: 'preset' },
+  { slug: 'nuxt/nuxt', category: 'Vue', description: 'Nuxt framework', source: 'preset' },
+  { slug: 'vuejs/vue-router', category: 'Vue', description: 'Official router', source: 'preset' },
+  { slug: 'vuejs/pinia', category: 'Vue', description: 'State management', source: 'preset' },
+  { slug: 'facebook/react', category: 'React', description: 'React library', source: 'preset' },
+  { slug: 'vercel/next.js', category: 'React', description: 'Next.js framework', source: 'preset' },
+  { slug: 'remix-run/remix', category: 'React', description: 'Remix framework', source: 'preset' },
+  { slug: 'angular/angular', category: 'Angular', description: 'Angular framework', source: 'preset' },
+  { slug: 'sveltejs/svelte', category: 'Svelte', description: 'Svelte compiler', source: 'preset' },
+  { slug: 'vitejs/vite', category: 'Tooling', description: 'Frontend build tool', source: 'preset' },
+  { slug: 'microsoft/TypeScript', category: 'Tooling', description: 'TypeScript language', source: 'preset' },
+  { slug: 'expressjs/express', category: 'Node', description: 'Express.js', source: 'preset' },
+  { slug: 'fastify/fastify', category: 'Node', description: 'Fast Node framework', source: 'preset' },
+  { slug: 'prisma/prisma', category: 'DB', description: 'Next-gen ORM', source: 'preset' },
+  { slug: 'django/django', category: 'Python', description: 'Django web framework', source: 'preset' },
+  { slug: 'pallets/flask', category: 'Python', description: 'Flask micro-framework', source: 'preset' },
+  { slug: 'tiangolo/fastapi', category: 'Python', description: 'FastAPI framework', source: 'preset' },
+  { slug: 'pytorch/pytorch', category: 'ML', description: 'PyTorch deep learning', source: 'preset' },
+  { slug: 'scikit-learn/scikit-learn', category: 'ML', description: 'ML for Python', source: 'preset' },
+  { slug: 'pandas-dev/pandas', category: 'ML', description: 'Data analysis', source: 'preset' }
+]
+
+const repoSuggestions = computed<RepoSuggestion[]>(() => {
+  const q = newRepoUrl.value.trim().toLowerCase()
+  const archiveSuggestions: RepoSuggestion[] = store.archivedRepos.map(r => ({
+    slug: `${r.owner}/${r.name}`,
+    category: 'архив',
+    description: r.description || undefined,
+    source: 'archive' as const
+  }))
+  const all = [...archiveSuggestions, ...PRESET_REPOS]
+  if (!q) return all.slice(0, 8)
+  return all
+    .filter(s => s.slug.toLowerCase().includes(q) || (s.description ?? '').toLowerCase().includes(q))
+    .slice(0, 10)
+})
+
+function applyRepoSuggestion(s: RepoSuggestion) {
+  newRepoUrl.value = s.slug
+  repoSuggestOpen.value = false
+  repoSuggestIdx.value = 0
+}
+
+function onRepoBlur() {
+  setTimeout(() => {
+    repoSuggestOpen.value = false
+  }, 150)
+}
 
 onMounted(async () => {
   try {
